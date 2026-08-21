@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  OPERATOR
+  ADMIN
+}
+
+enum ExternalSessionStatus {
+  ACTIVE
+  EXPIRED
+  FAILED
+  LOGGED_OUT
+}
+
+enum BridgeSessionStatus {
+  PENDING
+  ACTIVE
+  CLOSED
+  FAILED
+}
+
+enum SignalKind {
+  OFFER
+  ANSWER
+  ICE_CANDIDATE
+}
+
+enum SignalFrom {
+  CLIENT
+  WORKER
+  SYSTEM
+}
+
+enum SiteRecordKind {
+  BET
+  CREDIT
+  EGAME
+}
+
+model User {
+  id                           String                        @id @default(cuid())
+  account                      String                        @unique
+  passwordHash                 String
+  role                         UserRole                      @default(USER)
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  externalSessions             ExternalSession[]
+  bridgeSessions               BridgeSession[]
+  rawActionLogs                RawActionLog[]
+  adjustments                  AdjustmentLog[]               @relation("AdjustedBy")
+  adjustmentEdits              AdjustmentVersion[]           @relation("EditedBy")
+  siteBetRecords               SiteBetRecord[]
+  siteCreditRecords            SiteCreditRecord[]
+  siteEGameRecords             SiteEGameRecord[]
+  siteRecordAdjustments        SiteRecordAdjustment[]        @relation("SiteRecordAdjustedBy")
+  siteRecordAdjustmentVersions SiteRecordAdjustmentVersion[] @relation("SiteRecordVersionEditedBy")
+}
+
+model ExternalSession {
+  id               String                @id @default(cuid())
+  userId           String
+  provider         String
+  externalAccount  String
+  sessionTokenHash String
+  status           ExternalSessionStatus @default(ACTIVE)
+  issuedAt         DateTime
+  expiresAt        DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id])
+  bridgeSessions BridgeSession[]
+
+  @@index([userId, provider])
+  @@index([status])
+}
+
+model BridgeSession {
+  id                String              @id @default(cuid())
+  userId            String
+  provider          String
+  externalSessionId String?
+  workerSessionId   String?
+  viewTokenHash     String
+  status            BridgeSessionStatus @default(PENDING)
+  startedAt         DateTime?
+  closedAt          DateTime?
+  expiresAt         DateTime
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id])
+  externalSession ExternalSession? @relation(fields: [externalSessionId], references: [id])
+  signals         BridgeSignal[]
+
+  @@index([userId, createdAt])
+  @@index([status, expiresAt])
+}
+
+model BridgeSignal {
+  id              Int        @id @default(autoincrement())
+  bridgeSessionId String
+  from            SignalFrom
+  kind            SignalKind
+  payload         Json
+  createdAt       DateTime   @default(now())
+
+  bridgeSession BridgeSession @relation(fields: [bridgeSessionId], references: [id])
+
+  @@index([bridgeSessionId, id])
+}
+
+model RawActionLog {
+  id              String   @id @default(cuid())
+  userId          String
+  provider        String
+  sourceTraceId   String?  @unique
+  actionType      String
+  actionPayload   Json
+  sourceCreatedAt DateTime
+  createdAt       DateTime @default(now())
+
+  user             User               @relation(fields: [userId], references: [id])
+  adjustments      AdjustmentLog[]
+  SiteBetRecord    SiteBetRecord[]
+  SiteCreditRecord SiteCreditRecord[]
+  SiteEGameRecord  SiteEGameRecord[]
+
+  @@index([userId, sourceCreatedAt])
+  @@index([provider, sourceCreatedAt])
+}
+
+model SiteBetRecord {
+  id             String   @id @default(cuid())
+  userId         String
+  provider       String   @default("calibet")
+  rawActionLogId String?
+  orderNo        String
+  gameType       String
+  tableNo        String
+  roundNo        String
+  betTime        DateTime
+  betType        String
+  betAmount      Decimal  @db.Decimal(18, 2)
+  validAmount    Decimal  @db.Decimal(18, 2)
+  winLoss        Decimal  @db.Decimal(18, 2)
+  status         String
+  replayPath     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  rawActionLog RawActionLog? @relation(fields: [rawActionLogId], references: [id])
+
+  @@unique([userId, orderNo])
+  @@index([userId, betTime])
+  @@index([rawActionLogId])
+}
+
+model SiteCreditRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  provider        String   @default("calibet")
+  rawActionLogId  String?
+  transactionNo   String
+  accountNo       String
+  operationTime   DateTime
+  transactionType String
+  balanceBefore   Decimal  @db.Decimal(18, 2)
+  income          Decimal  @db.Decimal(18, 2)
+  expense         Decimal  @db.Decimal(18, 2)
+  balanceAfter    Decimal  @db.Decimal(18, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  rawActionLog RawActionLog? @relation(fields: [rawActionLogId], references: [id])
+
+  @@unique([userId, transactionNo])
+  @@index([userId, operationTime])
+  @@index([rawActionLogId])
+}
+
+model SiteEGameRecord {
+  id             String   @id @default(cuid())
+  userId         String
+  provider       String   @default("calibet")
+  rawActionLogId String?
+  orderNo        String
+  platformCode   String
+  gameCode       String
+  betTime        DateTime
+  gameType       String
+  betAmount      Decimal  @db.Decimal(18, 2)
+  winLoss        Decimal  @db.Decimal(18, 2)
+  validAmount    Decimal  @db.Decimal(18, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  rawActionLog RawActionLog? @relation(fields: [rawActionLogId], references: [id])
+
+  @@unique([userId, orderNo])
+  @@index([userId, betTime])
+  @@index([rawActionLogId])
+}
+
+model SiteRecordAdjustment {
+  id               String         @id @default(cuid())
+  recordKind       SiteRecordKind
+  recordId         String
+  adjustedByUserId String
+  reason           String
+  currentValue     Json
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  adjustedBy User                          @relation("SiteRecordAdjustedBy", fields: [adjustedByUserId], references: [id])
+  versions   SiteRecordAdjustmentVersion[]
+
+  @@unique([recordKind, recordId])
+  @@index([adjustedByUserId, createdAt])
+}
+
+model SiteRecordAdjustmentVersion {
+  id             String   @id @default(cuid())
+  adjustmentId   String
+  editedByUserId String
+  versionNo      Int
+  previousValue  Json
+  nextValue      Json
+  changeNote     String?
+  createdAt      DateTime @default(now())
+
+  adjustment SiteRecordAdjustment @relation(fields: [adjustmentId], references: [id])
+  editedBy   User                 @relation("SiteRecordVersionEditedBy", fields: [editedByUserId], references: [id])
+
+  @@unique([adjustmentId, versionNo])
+  @@index([editedByUserId, createdAt])
+}
+
+model AdjustmentLog {
+  id               String   @id @default(cuid())
+  rawActionLogId   String
+  adjustedByUserId String
+  reason           String
+  currentValue     Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  rawActionLog RawActionLog        @relation(fields: [rawActionLogId], references: [id])
+  adjustedBy   User                @relation("AdjustedBy", fields: [adjustedByUserId], references: [id])
+  versions     AdjustmentVersion[]
+
+  @@index([rawActionLogId])
+  @@index([adjustedByUserId, createdAt])
+}
+
+model AdjustmentVersion {
+  id              String   @id @default(cuid())
+  adjustmentLogId String
+  editedByUserId  String
+  versionNo       Int
+  previousValue   Json
+  nextValue       Json
+  changeNote      String?
+  createdAt       DateTime @default(now())
+
+  adjustmentLog AdjustmentLog @relation(fields: [adjustmentLogId], references: [id])
+  editedBy      User          @relation("EditedBy", fields: [editedByUserId], references: [id])
+
+  @@unique([adjustmentLogId, versionNo])
+  @@index([editedByUserId, createdAt])
+}
