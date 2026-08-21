@@ -44,6 +44,15 @@ This is a production-oriented Node.js + PostgreSQL skeleton for your authorized 
 4. Start worker:
    - `npm run start:dev`
 
+## Vercel Static Upload
+
+The browser entry files live in `apps/api/public`. To prepare a Vercel static upload folder from the repository root:
+
+1. Run `npm run build`
+2. Upload the generated `vercel-static` folder to Vercel, or deploy this repository with the included `vercel.json`.
+
+Note: the static site still needs the API, worker, PostgreSQL, LiveKit, and environment variables running for login and remote control to work.
+
 ## Bridge and Signaling Endpoints
 
 - `POST /api/v1/bridge/sessions/start`
