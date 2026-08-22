@@ -34,10 +34,10 @@ body {
 .hall-panel {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 104px 1fr;
+  grid-template-columns: 100px 1fr;
   background:
-    linear-gradient(90deg, rgba(8, 4, 4, 0.97) 0 104px, rgba(11, 8, 5, 0.5) 104px 100%),
-    radial-gradient(circle at 54% 35%, rgba(153, 107, 57, 0.44), rgba(7, 6, 4, 0.82) 48%, #050504 100%);
+    linear-gradient(90deg, rgba(8, 4, 4, 0.97) 0 100px, rgba(11, 8, 5, 0.5) 100px 100%),
+    radial-gradient(circle at 50% 42%, rgba(116, 83, 55, 0.46), rgba(12, 8, 5, 0.86) 46%, #030303 100%);
   overflow: hidden;
 }
 
@@ -49,7 +49,7 @@ body {
   display: grid;
   align-content: start;
   gap: 2px;
-  padding: 12px 8px;
+  padding: 8px 6px;
   border-right: 1px solid rgba(230, 193, 118, 0.2);
   background: rgba(5, 3, 3, 0.84);
 }
@@ -112,8 +112,8 @@ body {
   min-width: 0;
   height: 100vh;
   display: grid;
-  grid-template-rows: 42px 86px 1fr;
-  padding: 10px 12px 20px;
+  grid-template-rows: 36px 96px 1fr;
+  padding: 4px 8px 16px;
   background:
     linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.68)),
     radial-gradient(circle at 50% 70%, rgba(71, 53, 34, 0.75), rgba(0, 0, 0, 0.76) 60%);
@@ -121,8 +121,8 @@ body {
 
 .hall-topbar {
   display: grid;
-  grid-template-columns: 170px 180px 170px 72px 86px 1fr;
-  gap: 8px;
+  grid-template-columns: 150px 158px 150px 64px 76px 1fr;
+  gap: 7px;
   align-items: center;
 }
 
@@ -130,7 +130,7 @@ body {
 .credit-pill,
 .range-pill,
 .hall-icon-btn {
-  height: 30px;
+  height: 28px;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -140,7 +140,7 @@ body {
   color: #d8c28d;
   background: rgba(16, 11, 7, 0.78);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .player-pill strong,
@@ -162,14 +162,25 @@ body {
 .recent-strip {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(8, minmax(74px, 1fr));
-  gap: 8px;
-  align-items: end;
-  padding-bottom: 8px;
+  grid-template-columns: repeat(8, minmax(78px, 1fr));
+  grid-template-rows: 23px 64px;
+  gap: 5px 8px;
+  align-items: stretch;
+  padding: 0 0 8px;
+}
+
+.recent-title {
+  grid-column: 1 / -1;
+  align-self: end;
+  padding-left: 2px;
+  color: #ede3bd;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: left;
 }
 
 .recent-game {
-  height: 68px;
+  height: 64px;
   display: grid;
   place-items: center;
   gap: 3px;
@@ -212,16 +223,16 @@ body {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(260px, 1fr));
-  grid-auto-rows: 126px;
-  gap: 9px 12px;
+  grid-auto-rows: 112px;
+  gap: 9px 10px;
   align-content: start;
 }
 
 .hall-table {
   position: relative;
   display: grid;
-  grid-template-columns: 86px 1fr;
-  grid-template-rows: 24px 1fr;
+  grid-template-columns: 76px 1fr;
+  grid-template-rows: 20px 1fr;
   border: 1px solid rgba(255, 205, 111, 0.18);
   border-radius: 6px;
   background: rgba(9, 7, 4, 0.72);
@@ -241,25 +252,25 @@ body {
 .table-title {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 1fr 54px;
+  grid-template-columns: 1fr 46px;
   align-items: center;
   padding-left: 8px;
   color: #efd9a0;
-  font-size: 13px;
+  font-size: 12px;
   background: rgba(12, 15, 9, 0.82);
 }
 
 .count {
   justify-self: end;
-  min-width: 52px;
-  height: 20px;
+  min-width: 45px;
+  height: 18px;
   display: grid;
   place-items: center;
   border: 2px solid currentColor;
   border-radius: 5px;
   color: var(--red);
   background: #050505;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .count.green { color: #5cff59; }
@@ -284,7 +295,7 @@ body {
 .road-board {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(18, 1fr);
+  grid-template-columns: repeat(28, 1fr);
   grid-template-rows: repeat(5, 1fr);
   gap: 1px;
   padding: 3px;
@@ -292,52 +303,52 @@ body {
     linear-gradient(#d8d8d8 1px, transparent 1px),
     linear-gradient(90deg, #d8d8d8 1px, transparent 1px),
     #f7f7f0;
-  background-size: 22px 22px;
+  background-size: 18px 18px;
 }
 
 .road-board::before,
 .road-board::after {
   content: "";
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   align-self: center;
   justify-self: center;
   border: 2px solid var(--blue);
   border-radius: 999px;
   background: white;
   box-shadow:
-    18px 0 0 -2px white, 18px 0 0 0 var(--red),
-    36px 0 0 -2px white, 36px 0 0 0 var(--blue),
-    54px 0 0 -2px white, 54px 0 0 0 var(--green),
-    72px 0 0 -2px white, 72px 0 0 0 #aaa,
-    90px 0 0 -2px white, 90px 0 0 0 var(--red),
-    108px 0 0 -2px white, 108px 0 0 0 var(--blue),
-    126px 0 0 -2px white, 126px 0 0 0 var(--red),
-    144px 0 0 -2px white, 144px 0 0 0 var(--blue),
-    162px 0 0 -2px white, 162px 0 0 0 #aaa,
-    180px 0 0 -2px white, 180px 0 0 0 var(--green),
-    198px 0 0 -2px white, 198px 0 0 0 var(--blue),
-    216px 0 0 -2px white, 216px 0 0 0 var(--red);
+    16px 0 0 -2px white, 16px 0 0 0 var(--red),
+    32px 0 0 -2px white, 32px 0 0 0 var(--blue),
+    48px 0 0 -2px white, 48px 0 0 0 var(--green),
+    64px 0 0 -2px white, 64px 0 0 0 #aaa,
+    80px 0 0 -2px white, 80px 0 0 0 var(--red),
+    96px 0 0 -2px white, 96px 0 0 0 var(--blue),
+    112px 0 0 -2px white, 112px 0 0 0 var(--red),
+    128px 0 0 -2px white, 128px 0 0 0 var(--blue),
+    144px 0 0 -2px white, 144px 0 0 0 #aaa,
+    160px 0 0 -2px white, 160px 0 0 0 var(--green),
+    176px 0 0 -2px white, 176px 0 0 0 var(--blue),
+    192px 0 0 -2px white, 192px 0 0 0 var(--red);
 }
 
 .road-board::after {
-  transform: translateY(22px);
+  transform: translateY(18px);
   border-color: var(--red);
   box-shadow:
-    18px 0 0 -2px white, 18px 0 0 0 #aaa,
-    36px 0 0 -2px white, 36px 0 0 0 var(--blue),
-    54px 0 0 -2px white, 54px 0 0 0 var(--blue),
-    72px 0 0 -2px white, 72px 0 0 0 var(--green),
-    90px 0 0 -2px white, 90px 0 0 0 #aaa,
-    108px 0 0 -2px white, 108px 0 0 0 var(--red),
-    126px 0 0 -2px white, 126px 0 0 0 var(--blue),
-    144px 0 0 -2px white, 144px 0 0 0 var(--green),
-    162px 0 0 -2px white, 162px 0 0 0 var(--blue),
-    180px 0 0 -2px white, 180px 0 0 0 var(--red),
-    198px 0 0 -2px white, 198px 0 0 0 #aaa;
+    16px 0 0 -2px white, 16px 0 0 0 #aaa,
+    32px 0 0 -2px white, 32px 0 0 0 var(--blue),
+    48px 0 0 -2px white, 48px 0 0 0 var(--blue),
+    64px 0 0 -2px white, 64px 0 0 0 var(--green),
+    80px 0 0 -2px white, 80px 0 0 0 #aaa,
+    96px 0 0 -2px white, 96px 0 0 0 var(--red),
+    112px 0 0 -2px white, 112px 0 0 0 var(--blue),
+    128px 0 0 -2px white, 128px 0 0 0 var(--green),
+    144px 0 0 -2px white, 144px 0 0 0 var(--blue),
+    160px 0 0 -2px white, 160px 0 0 0 var(--red),
+    176px 0 0 -2px white, 176px 0 0 0 #aaa;
 }
 
-.road-wide::before { transform: translateY(-22px); }
+  .road-wide::before { transform: translateY(-18px); }
 .dimmed { place-items: center; background-color: rgba(45, 45, 42, 0.76); }
 .dimmed em { color: #e8d6a5; font-style: normal; font-size: 16px; }
 .empty-road::before,
