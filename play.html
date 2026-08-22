@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CaliBet</title>
+  <link rel="stylesheet" href="/play.css" />
+</head>
+<body>
+  <main class="app-shell" data-state="login">
+    <section id="loginPanel" class="login-panel">
+      <form id="loginForm" class="login-card">
+        <div class="brand-mark">CaliBet</div>
+        <label>會員帳號<input id="account" autocomplete="username" /></label>
+        <label>會員密碼<input id="password" type="password" autocomplete="current-password" /></label>
+        <button id="loginBtn" type="submit">登入</button>
+        <div id="loginStatus" class="login-status">請登入</div>
+      </form>
+    </section>
+
+    <section id="gamePanel" class="game-panel" aria-label="遊戲畫面">
+      <header class="game-topbar">
+        <div class="brand">CaliBet</div>
+        <div class="session-state" id="sessionState">連線中</div>
+        <button id="recordsBtn" class="top-action">投注記錄</button>
+        <button id="fullscreenBtn" class="top-action">全螢幕</button>
+        <button id="logoutBtn" class="top-action subtle">登出</button>
+      </header>
+
+      <div class="screen-frame">
+        <video id="screen" autoplay muted playsinline aria-label="CaliBet"></video>
+        <img id="frameScreen" alt="CaliBet" hidden />
+        <div id="loadingLayer" class="loading-layer">
+          <div class="spinner"></div>
+          <strong id="loadingTitle">正在連線</strong>
+          <span id="loadingText">請稍候</span>
+        </div>
+        <button id="recordsHotspot" class="records-hotspot" title="投注記錄">投注記錄</button>
+      </div>
+
+      <section id="recordsModal" class="records-modal" aria-label="投注記錄" hidden>
+        <div class="records-window">
+          <div class="records-titlebar">
+            <strong>投注記錄</strong>
+            <button id="closeRecordsBtn" class="modal-close" type="button">關閉</button>
+          </div>
+          <iframe id="recordsFrame" title="投注記錄"></iframe>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="/play.js?v=livekit-extreme-20260821"></script>
+</body>
+</html>

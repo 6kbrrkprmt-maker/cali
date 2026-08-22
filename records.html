@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>本站下注紀錄</title>
+  <link rel="stylesheet" href="/records.css" />
+</head>
+<body>
+  <div class="login-box">
+    <input id="apiBase" value="http://localhost:4000" />
+    <input id="account" value="admin02" />
+    <input id="password" type="password" value="Aa12345678" />
+    <button id="loginBtn">登入</button>
+    <span id="loginStatus" class="status">未登入</span>
+  </div>
+
+  <main class="shell">
+    <nav class="tabs">
+      <button class="tab active" data-tab="bet">投注記錄</button>
+      <button class="tab" data-tab="credit">額度記錄</button>
+      <button class="tab" data-tab="egame">電子遊戲記錄</button>
+    </nav>
+
+    <section class="filters">
+      <label class="field">交易單號:<input id="keyword" /></label>
+      <label class="field">交易類型:<select id="recordType"><option>全部</option></select></label>
+      <label class="field">開始時間:<input id="startAt" value="2026-08-17 12:00:00" /></label>
+      <label class="field">至:<input id="endAt" value="2026-08-19 12:00:00" /></label>
+      <button id="searchBtn" class="search">查詢</button>
+    </section>
+
+    <section class="table-wrap">
+      <table>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="empty" class="empty" hidden>暫無資料</div>
+    </section>
+
+    <footer class="footer">
+      <div class="pages">
+        <span id="totalItems">總計: 0</span>
+        <span id="pageNo">1/1</span>
+        <button id="nextPage" class="page-btn">&gt;</button>
+        <button id="lastPage" class="page-btn">&gt;|</button>
+        <span>每頁顯示 10</span>
+      </div>
+      <div id="totals" class="totals"></div>
+    </footer>
+  </main>
+
+  <script src="/records.js"></script>
+</body>
+</html>
