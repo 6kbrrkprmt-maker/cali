@@ -1,10 +1,13 @@
 const state = {
+  view: 'hall',
+  selectedTable: null,
   bridgeSessionId: '',
   room: null,
   lastSentAt: 0,
   lastPointerActionAt: 0,
   frameSeen: false,
   recordsOpen: false,
+  recordsFromHall: false,
   topbarPulseTimer: null,
   connectWatchdogTimer: null,
   inputAckTimer: null,
@@ -26,6 +29,7 @@ const IDLE_SHUTDOWN_MS = 5 * 60 * 1000;
 let liveKitModulePromise;
 
 const appShell = document.querySelector('.app-shell');
+const hallPanel = document.getElementById('hallPanel');
 const screenEl = document.getElementById('screen');
 const frameScreenEl = document.getElementById('frameScreen');
 const screenFrame = document.querySelector('.screen-frame');
@@ -38,6 +42,9 @@ const baccaratPanel = document.getElementById('baccaratPanel');
 const baccaratBalance = document.getElementById('baccaratBalance');
 const baccaratRound = document.getElementById('baccaratRound');
 const baccaratMessage = document.getElementById('baccaratMessage');
+const hallAccount = document.getElementById('hallAccount');
+const hallBalance = document.getElementById('hallBalance');
+const hallRange = document.getElementById('hallRange');
 
 function getApiBase() {
   return `${window.location.origin}`.replace(/\/$/, '');
@@ -51,6 +58,31 @@ function formatMoney(value) {
   return Number(value || 0).toLocaleString('zh-TW', { maximumFractionDigits: 2 });
 }
 
+function getStoredAccount() {
+  const token = localStorage.getItem('platformToken');
+  if (!token) {
+    return '23mzf';
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.account || '23mzf';
+  } catch (_error) {
+    return '23mzf';
+  }
+}
+
+function setView(view) {
+  state.view = view;
+  appShell.dataset.state = view;
+}
+
+function renderHall(status) {
+  hallAccount.textContent = getStoredAccount();
+  hallBalance.textContent = formatMoney(status?.balance ?? state.baccarat.balance);
+  hallRange.textContent = '5 - 3,000';
+}
+
 function renderBaccarat(status) {
   state.baccarat.balance = status.balance;
   state.baccarat.roundId = status.round.id;
@@ -61,11 +93,20 @@ function renderBaccarat(status) {
   document.getElementById('playerTotal').textContent = formatMoney(status.totals.player);
   document.getElementById('bankerTotal').textContent = formatMoney(status.totals.banker);
   document.getElementById('tieTotal').textContent = formatMoney(status.totals.tie);
+  renderHall(status);
 }
 
 async function loadBaccaratStatus() {
   const status = await request('/api/v1/baccarat/status');
   renderBaccarat(status);
+}
+
+async function loadHallStatus() {
+  try {
+    await loadBaccaratStatus();
+  } catch (_error) {
+    renderHall();
+  }
 }
 
 async function placeBaccaratBet(side) {
@@ -373,7 +414,7 @@ async function connectLiveKit(url, token) {
 }
 
 async function enterGame() {
-  appShell.dataset.state = 'game';
+  setView('table');
   showLoading('正在連線', '正在進入遊戲大廳');
   setSessionState('連線中');
   state.frameSeen = false;
@@ -410,6 +451,28 @@ async function enterGame() {
   }
 }
 
+function enterSelectedTable(tableId) {
+  state.selectedTable = tableId;
+  enterGame().catch((error) => {
+    showLoading('連線失敗', error.message);
+    setSessionState('連線失敗');
+  });
+}
+
+async function returnToHall() {
+  await closeBridgeSession();
+  if (state.inputAckTimer) {
+    clearTimeout(state.inputAckTimer);
+    state.inputAckTimer = null;
+  }
+  screenEl.srcObject = null;
+  screenEl.hidden = false;
+  frameScreenEl.hidden = true;
+  state.selectedTable = null;
+  setView('hall');
+  loadHallStatus().catch(() => undefined);
+}
+
 async function sendInput(action) {
   if (!state.bridgeSessionId) {
     return;
@@ -439,26 +502,24 @@ async function sendInput(action) {
 }
 
 async function openRecordsModal() {
-  if (!state.bridgeSessionId) {
-    return;
-  }
-
   state.recordsOpen = true;
   const modal = document.getElementById('recordsModal');
   const frame = document.getElementById('recordsFrame');
 
-  setSessionState('同步紀錄中');
-  try {
-    const result = await request(`/api/v1/bridge/sessions/${state.bridgeSessionId}/sync-records`, {
-      method: 'POST',
-    });
-    if (result?.inserted?.total > 0) {
-      setSessionState(`已連線 · 新增 ${result.inserted.total} 筆紀錄`);
-    } else {
-      setSessionState('已連線');
+  if (state.bridgeSessionId) {
+    setSessionState('同步紀錄中');
+    try {
+      const result = await request(`/api/v1/bridge/sessions/${state.bridgeSessionId}/sync-records`, {
+        method: 'POST',
+      });
+      if (result?.inserted?.total > 0) {
+        setSessionState(`已連線 · 新增 ${result.inserted.total} 筆紀錄`);
+      } else {
+        setSessionState('已連線');
+      }
+    } catch (_error) {
+      setSessionState('同步失敗');
     }
-  } catch (_error) {
-    setSessionState('同步失敗');
   }
 
   if (frame.getAttribute('src') !== '/records.html?embedded=1') {
@@ -472,6 +533,10 @@ async function openRecordsModal() {
 function closeRecordsModal() {
   state.recordsOpen = false;
   document.getElementById('recordsModal').hidden = true;
+  if (state.recordsFromHall && !state.bridgeSessionId) {
+    state.recordsFromHall = false;
+    setView('hall');
+  }
 }
 
 function isRecordAreaClick(xRatio, yRatio) {
@@ -483,7 +548,9 @@ function getActiveScreenElement() {
 }
 
 function isLocalOverlayEvent(event) {
-  return baccaratPanel?.contains(event.target) || event.target === document.getElementById('recordsHotspot');
+  return hallPanel?.contains(event.target)
+    || baccaratPanel?.contains(event.target)
+    || event.target === document.getElementById('recordsHotspot');
 }
 
 function handleStageClick(clientX, clientY) {
@@ -613,6 +680,11 @@ document.getElementById('resetBaccaratBtn').addEventListener('click', async () =
 document.getElementById('recordsBtn').addEventListener('click', () => {
   openRecordsModal().catch(() => undefined);
 });
+document.getElementById('hallRecordsBtn').addEventListener('click', () => {
+  state.recordsFromHall = true;
+  setView('table');
+  openRecordsModal().catch(() => undefined);
+});
 document.getElementById('recordsHotspot').addEventListener('click', (event) => {
   event.stopPropagation();
   openRecordsModal().catch(() => undefined);
@@ -629,6 +701,26 @@ document.getElementById('fullscreenBtn').addEventListener('click', () => {
     return;
   }
   document.exitFullscreen().catch(() => undefined);
+});
+document.getElementById('hallFullscreenBtn').addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => undefined);
+    return;
+  }
+  document.exitFullscreen().catch(() => undefined);
+});
+document.querySelectorAll('[data-open-table]').forEach((tableCard) => {
+  const open = () => enterSelectedTable(tableCard.dataset.openTable);
+  tableCard.addEventListener('click', open);
+  tableCard.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      open();
+    }
+  });
+});
+document.getElementById('backHallBtn').addEventListener('click', () => {
+  returnToHall().catch(() => undefined);
 });
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await closeBridgeSession();
@@ -649,11 +741,6 @@ window.addEventListener('pagehide', () => {
   closeBridgeSession({ keepalive: true }).catch(() => undefined);
 });
 
-enterGame().catch((error) => {
-  showLoading('連線失敗', error.message);
-  setSessionState('連線失敗');
-});
-
-loadBaccaratStatus().catch((error) => {
+loadHallStatus().catch((error) => {
   baccaratMessage.textContent = error.message;
 });
