@@ -13,6 +13,12 @@ const state = {
   frameFetchInProgress: false,
   idleShutdownTimer: null,
   closingSession: false,
+  selectedChip: 100,
+  baccarat: {
+    balance: 0,
+    roundId: '',
+    totals: { player: 0, banker: 0, tie: 0 },
+  },
 };
 
 const IDLE_SHUTDOWN_MS = 5 * 60 * 1000;
@@ -28,6 +34,10 @@ const loadingTitle = document.getElementById('loadingTitle');
 const loadingText = document.getElementById('loadingText');
 const sessionState = document.getElementById('sessionState');
 const gameTopbar = document.querySelector('.game-topbar');
+const baccaratPanel = document.getElementById('baccaratPanel');
+const baccaratBalance = document.getElementById('baccaratBalance');
+const baccaratRound = document.getElementById('baccaratRound');
+const baccaratMessage = document.getElementById('baccaratMessage');
 
 function getApiBase() {
   return `${window.location.origin}`.replace(/\/$/, '');
@@ -35,6 +45,58 @@ function getApiBase() {
 
 function setSessionState(text) {
   sessionState.textContent = text;
+}
+
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString('zh-TW', { maximumFractionDigits: 2 });
+}
+
+function renderBaccarat(status) {
+  state.baccarat.balance = status.balance;
+  state.baccarat.roundId = status.round.id;
+  state.baccarat.totals = status.totals;
+
+  baccaratBalance.textContent = formatMoney(status.balance);
+  baccaratRound.textContent = status.round.id;
+  document.getElementById('playerTotal').textContent = formatMoney(status.totals.player);
+  document.getElementById('bankerTotal').textContent = formatMoney(status.totals.banker);
+  document.getElementById('tieTotal').textContent = formatMoney(status.totals.tie);
+}
+
+async function loadBaccaratStatus() {
+  const status = await request('/api/v1/baccarat/status');
+  renderBaccarat(status);
+}
+
+async function placeBaccaratBet(side) {
+  baccaratMessage.textContent = '下注中';
+  try {
+    const result = await request('/api/v1/baccarat/bet', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ side, amount: state.selectedChip }),
+    });
+    renderBaccarat(result);
+    baccaratMessage.textContent = `已下注 ${formatMoney(state.selectedChip)}`;
+  } catch (error) {
+    baccaratMessage.textContent = error.message;
+  }
+}
+
+async function settleBaccarat(outcome) {
+  baccaratMessage.textContent = '結算中';
+  try {
+    const result = await request('/api/v1/baccarat/settle', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ outcome }),
+    });
+    renderBaccarat({ balance: result.balance, round: result.round, totals: result.totals });
+    baccaratMessage.textContent = `本局結果：${{ player: '閒', banker: '莊', tie: '和' }[outcome]}`;
+    setTimeout(() => loadBaccaratStatus().catch(() => undefined), 650);
+  } catch (error) {
+    baccaratMessage.textContent = error.message;
+  }
 }
 
 function showLoading(title, text) {
@@ -420,6 +482,10 @@ function getActiveScreenElement() {
   return frameScreenEl && !frameScreenEl.hidden ? frameScreenEl : screenEl;
 }
 
+function isLocalOverlayEvent(event) {
+  return baccaratPanel?.contains(event.target) || event.target === document.getElementById('recordsHotspot');
+}
+
 function handleStageClick(clientX, clientY) {
   const rect = getActiveScreenElement().getBoundingClientRect();
   if (!rect.width || !rect.height) {
@@ -446,7 +512,7 @@ function handleStageClick(clientX, clientY) {
 }
 
 function handleStagePointerUp(event) {
-  if (event.target === document.getElementById('recordsHotspot')) {
+  if (isLocalOverlayEvent(event)) {
     return;
   }
 
@@ -455,7 +521,7 @@ function handleStagePointerUp(event) {
 }
 
 screenFrame?.addEventListener('click', (event) => {
-  if (event.target === document.getElementById('recordsHotspot')) {
+  if (isLocalOverlayEvent(event)) {
     return;
   }
 
@@ -510,6 +576,40 @@ window.addEventListener('keydown', (event) => {
   });
 });
 
+baccaratPanel?.addEventListener('click', (event) => {
+  event.stopPropagation();
+});
+
+baccaratPanel?.addEventListener('pointerup', (event) => {
+  event.stopPropagation();
+});
+
+document.querySelectorAll('[data-chip]').forEach((button) => {
+  button.addEventListener('click', () => {
+    state.selectedChip = Number(button.dataset.chip || 100);
+    document.querySelectorAll('[data-chip]').forEach((chip) => chip.classList.toggle('active', chip === button));
+    baccaratMessage.textContent = `已選 ${formatMoney(state.selectedChip)}`;
+  });
+});
+
+document.querySelectorAll('[data-bet-side]').forEach((button) => {
+  button.addEventListener('click', () => {
+    placeBaccaratBet(button.dataset.betSide).catch(() => undefined);
+  });
+});
+
+document.querySelectorAll('[data-settle]').forEach((button) => {
+  button.addEventListener('click', () => {
+    settleBaccarat(button.dataset.settle).catch(() => undefined);
+  });
+});
+
+document.getElementById('resetBaccaratBtn').addEventListener('click', async () => {
+  const result = await request('/api/v1/baccarat/reset', { method: 'POST' });
+  renderBaccarat({ balance: result.balance, round: result.round, totals: { player: 0, banker: 0, tie: 0 } });
+  baccaratMessage.textContent = '已重置';
+});
+
 document.getElementById('recordsBtn').addEventListener('click', () => {
   openRecordsModal().catch(() => undefined);
 });
@@ -552,4 +652,8 @@ window.addEventListener('pagehide', () => {
 enterGame().catch((error) => {
   showLoading('連線失敗', error.message);
   setSessionState('連線失敗');
+});
+
+loadBaccaratStatus().catch((error) => {
+  baccaratMessage.textContent = error.message;
 });

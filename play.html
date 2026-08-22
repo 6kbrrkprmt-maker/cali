@@ -26,6 +26,31 @@
           <span id="loadingText">請稍候</span>
         </div>
         <button id="recordsHotspot" class="records-hotspot" title="投注記錄">投注記錄</button>
+        <section id="baccaratPanel" class="baccarat-panel" aria-label="百家樂下注">
+          <div class="baccarat-status">
+            <span>餘額 <strong id="baccaratBalance">--</strong></span>
+            <span>局號 <strong id="baccaratRound">--</strong></span>
+            <span id="baccaratMessage">選擇籌碼後下注</span>
+          </div>
+          <div class="baccarat-bets">
+            <button class="bet-zone player" data-bet-side="player" type="button"><span>閒</span><strong id="playerTotal">0</strong></button>
+            <button class="bet-zone tie" data-bet-side="tie" type="button"><span>和</span><strong id="tieTotal">0</strong></button>
+            <button class="bet-zone banker" data-bet-side="banker" type="button"><span>莊</span><strong id="bankerTotal">0</strong></button>
+          </div>
+          <div class="chip-row" id="chipRow">
+            <button class="chip active" data-chip="100" type="button">100</button>
+            <button class="chip" data-chip="500" type="button">500</button>
+            <button class="chip" data-chip="1000" type="button">1K</button>
+            <button class="chip" data-chip="5000" type="button">5K</button>
+            <button class="chip" data-chip="10000" type="button">10K</button>
+            <button id="resetBaccaratBtn" class="panel-action" type="button">重置</button>
+          </div>
+          <div class="settle-row" aria-label="測試結算">
+            <button data-settle="player" type="button">閒贏</button>
+            <button data-settle="banker" type="button">莊贏</button>
+            <button data-settle="tie" type="button">和局</button>
+          </div>
+        </section>
       </div>
 
       <section id="recordsModal" class="records-modal" aria-label="投注記錄" hidden>
@@ -40,6 +65,6 @@
     </section>
   </main>
 
-  <script type="module" src="/play.js?v=no-login-20260822"></script>
+  <script type="module" src="/play.js?v=baccarat-20260822"></script>
 </body>
 </html>
