@@ -48,9 +48,9 @@ This is a production-oriented Node.js + PostgreSQL skeleton for your authorized 
 
 The main browser site is also copied to the repository root, so the first folder page contains `index.html`, `play.html`, `play.js`, and `play.css`.
 
-After editing files in `apps/api/public`, run `npm run build` from the repository root to sync the root website files and regenerate `vercel-static`.
+After editing files in `apps/api/public`, run `npm run build` from the repository root to sync the root website files and regenerate `public`.
 
-For Vercel, deploy this repository with the included `vercel.json`. Vercel serves the committed root-level static files directly, and `/` routes to `index.html`.
+For Vercel, deploy this repository with the included `vercel.json`. Vercel runs `npm run build` and serves the generated `public/index.html`.
 
 Note: the static site still needs the API, worker, PostgreSQL, LiveKit, and environment variables running for login and remote control to work.
 

@@ -3,7 +3,7 @@ const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
 const sourceDir = path.join(rootDir, 'apps', 'api', 'public');
-const outputDir = path.join(rootDir, 'vercel-static');
+const outputDir = path.join(rootDir, 'public');
 
 function copyDirectory(source, target) {
   fs.mkdirSync(target, { recursive: true });

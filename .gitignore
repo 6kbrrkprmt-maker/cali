@@ -1,6 +1,7 @@
 node_modules/
 dist/
 vercel-static/
+public/
 coverage/
 .env
 .env.local
