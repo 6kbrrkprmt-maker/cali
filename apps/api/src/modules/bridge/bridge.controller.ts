@@ -8,12 +8,11 @@ import {
   Post,
   Query,
   Req,
-  UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
-import { SignalKind } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { SignalKind, UserRole } from '@prisma/client';
 import { Request } from 'express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PrismaService } from '../prisma.service';
 import { InputActionDto } from './dto/input-action.dto';
 import { PushAnswerDto } from './dto/push-answer.dto';
 import { PushCandidateDto } from './dto/push-candidate.dto';
@@ -25,10 +24,35 @@ interface RequestUser {
   sub: string;
 }
 
-@UseGuards(JwtAuthGuard)
 @Controller('bridge')
 export class BridgeController {
-  public constructor(private readonly bridgeService: BridgeService) {}
+  public constructor(
+    private readonly bridgeService: BridgeService,
+    private readonly configService: ConfigService,
+    private readonly prismaService: PrismaService,
+  ) {}
+
+  private async getBridgeUserId(req: Request): Promise<string> {
+    const requestUser = req.user as RequestUser | undefined;
+
+    if (requestUser?.sub) {
+      return requestUser.sub;
+    }
+
+    const account = this.configService.get<string>('PUBLIC_OPERATOR_ACCOUNT') || 'public-operator';
+    const user = await this.prismaService.user.upsert({
+      where: { account },
+      update: {},
+      create: {
+        account,
+        passwordHash: 'public-bridge-login-disabled',
+        role: UserRole.OPERATOR,
+      },
+      select: { id: true },
+    });
+
+    return user.id;
+  }
 
   @Post('sessions/start')
   public async startSession(@Req() req: Request, @Body() body: StartBridgeSessionDto): Promise<{
@@ -38,13 +62,8 @@ export class BridgeController {
     viewToken: string;
     expiresAt: string;
   }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.startBridgeSession(requestUser.sub, body.provider || 'calibet', body.streamMode || 'livekit');
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.startBridgeSession(userId, body.provider || 'calibet', body.streamMode || 'livekit');
   }
 
   @Get('sessions/:bridgeSessionId')
@@ -59,13 +78,8 @@ export class BridgeController {
     startedAt: Date | null;
     expiresAt: Date;
   }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.getSessionStatus(requestUser.sub, bridgeSessionId);
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.getSessionStatus(userId, bridgeSessionId);
   }
 
   @Delete('sessions/:bridgeSessionId')
@@ -73,13 +87,8 @@ export class BridgeController {
     @Req() req: Request,
     @Param('bridgeSessionId') bridgeSessionId: string,
   ): Promise<{ closed: boolean; closedAt: string }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.closeBridgeSession(requestUser.sub, bridgeSessionId);
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.closeBridgeSession(userId, bridgeSessionId);
   }
 
   @Post('sessions/:bridgeSessionId/signal/offer')
@@ -88,13 +97,8 @@ export class BridgeController {
     @Param('bridgeSessionId') bridgeSessionId: string,
     @Body() body: PushOfferDto,
   ): Promise<{ signalId: number; queuedAt: string }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.pushSignal(requestUser.sub, bridgeSessionId, SignalKind.OFFER, {
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.pushSignal(userId, bridgeSessionId, SignalKind.OFFER, {
       sdp: body.sdp,
     });
   }
@@ -105,13 +109,8 @@ export class BridgeController {
     @Param('bridgeSessionId') bridgeSessionId: string,
     @Body() body: PushAnswerDto,
   ): Promise<{ signalId: number; queuedAt: string }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.pushSignal(requestUser.sub, bridgeSessionId, SignalKind.ANSWER, {
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.pushSignal(userId, bridgeSessionId, SignalKind.ANSWER, {
       sdp: body.sdp,
     });
   }
@@ -122,13 +121,8 @@ export class BridgeController {
     @Param('bridgeSessionId') bridgeSessionId: string,
     @Body() body: PushCandidateDto,
   ): Promise<{ signalId: number; queuedAt: string }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.pushSignal(requestUser.sub, bridgeSessionId, SignalKind.ICE_CANDIDATE, {
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.pushSignal(userId, bridgeSessionId, SignalKind.ICE_CANDIDATE, {
       candidate: body.candidate,
       sdpMid: body.sdpMid,
       sdpMLineIndex: body.sdpMLineIndex,
@@ -141,13 +135,8 @@ export class BridgeController {
     @Param('bridgeSessionId') bridgeSessionId: string,
     @Query('afterId', new ParseIntPipe({ optional: true })) afterId = 0,
   ): Promise<{ signals: Array<{ id: number; from: string; kind: string; payload: unknown; createdAt: string }> }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.pullSignals(requestUser.sub, bridgeSessionId, afterId);
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.pullSignals(userId, bridgeSessionId, afterId);
   }
 
   @Get('sessions/:bridgeSessionId/frame')
@@ -155,13 +144,8 @@ export class BridgeController {
     @Req() req: Request,
     @Param('bridgeSessionId') bridgeSessionId: string,
   ): Promise<{ workerSessionId: string; mimeType?: string; imageBase64: string; capturedAt: string }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.getFrame(requestUser.sub, bridgeSessionId);
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.getFrame(userId, bridgeSessionId);
   }
 
   @Get('sessions/:bridgeSessionId/livekit-token')
@@ -175,13 +159,8 @@ export class BridgeController {
     token: string;
     expiresAt: string;
   }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.createLiveKitViewerToken(requestUser.sub, bridgeSessionId);
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.createLiveKitViewerToken(userId, bridgeSessionId);
   }
 
   @Post('sessions/:bridgeSessionId/input')
@@ -190,13 +169,8 @@ export class BridgeController {
     @Param('bridgeSessionId') bridgeSessionId: string,
     @Body() body: InputActionDto,
   ): Promise<{ accepted: boolean; traceId: string; sentAt: string }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.sendInputAction(requestUser.sub, bridgeSessionId, body);
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.sendInputAction(userId, bridgeSessionId, body);
   }
 
   @Post('sessions/:bridgeSessionId/sync-records')
@@ -209,13 +183,8 @@ export class BridgeController {
     inserted: { bet: number; credit: number; egame: number; total: number };
     parseErrors: number;
   }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.syncSessionRecords(requestUser.sub, bridgeSessionId);
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.syncSessionRecords(userId, bridgeSessionId);
   }
 
   @Get('sessions/:bridgeSessionId/network')
@@ -239,13 +208,8 @@ export class BridgeController {
       bodySnippet?: string;
     }>;
   }> {
-    const requestUser = req.user as RequestUser | undefined;
-
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
-    }
-
-    return this.bridgeService.getSessionNetworkLogs(requestUser.sub, bridgeSessionId, {
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.getSessionNetworkLogs(userId, bridgeSessionId, {
       contains,
       afterId,
       limit,

@@ -7,24 +7,14 @@
   <link rel="stylesheet" href="/play.css" />
 </head>
 <body>
-  <main class="app-shell" data-state="login">
-    <section id="loginPanel" class="login-panel">
-      <form id="loginForm" class="login-card">
-        <div class="brand-mark">CaliBet</div>
-        <label>會員帳號<input id="account" autocomplete="username" /></label>
-        <label>會員密碼<input id="password" type="password" autocomplete="current-password" /></label>
-        <button id="loginBtn" type="submit">登入</button>
-        <div id="loginStatus" class="login-status">請登入</div>
-      </form>
-    </section>
-
+  <main class="app-shell" data-state="game">
     <section id="gamePanel" class="game-panel" aria-label="遊戲畫面">
       <header class="game-topbar">
         <div class="brand">CaliBet</div>
         <div class="session-state" id="sessionState">連線中</div>
         <button id="recordsBtn" class="top-action">投注記錄</button>
         <button id="fullscreenBtn" class="top-action">全螢幕</button>
-        <button id="logoutBtn" class="top-action subtle">登出</button>
+        <button id="logoutBtn" class="top-action subtle">重連</button>
       </header>
 
       <div class="screen-frame">
@@ -50,6 +40,6 @@
     </section>
   </main>
 
-  <script type="module" src="/play.js?v=livekit-extreme-20260821"></script>
+  <script type="module" src="/play.js?v=no-login-20260822"></script>
 </body>
 </html>

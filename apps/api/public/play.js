@@ -1,5 +1,4 @@
 const state = {
-  token: localStorage.getItem('platformToken') || '',
   bridgeSessionId: '',
   room: null,
   lastSentAt: 0,
@@ -28,15 +27,10 @@ const loadingLayer = document.getElementById('loadingLayer');
 const loadingTitle = document.getElementById('loadingTitle');
 const loadingText = document.getElementById('loadingText');
 const sessionState = document.getElementById('sessionState');
-const loginStatus = document.getElementById('loginStatus');
 const gameTopbar = document.querySelector('.game-topbar');
 
 function getApiBase() {
   return `${window.location.origin}`.replace(/\/$/, '');
-}
-
-function setLoginStatus(text) {
-  loginStatus.textContent = text;
 }
 
 function setSessionState(text) {
@@ -150,8 +144,7 @@ function scheduleIdleShutdown() {
 
 async function closeBridgeSession(options = {}) {
   const bridgeSessionId = state.bridgeSessionId;
-  const token = state.token;
-  if (!bridgeSessionId || !token || state.closingSession) {
+  if (!bridgeSessionId || state.closingSession) {
     return;
   }
 
@@ -168,7 +161,6 @@ async function closeBridgeSession(options = {}) {
   screenEl.srcObject = null;
   const closeRequest = fetch(`${getApiBase()}/api/v1/bridge/sessions/${bridgeSessionId}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
     keepalive: Boolean(options.keepalive),
   }).catch(() => undefined);
 
@@ -179,8 +171,8 @@ async function closeBridgeSession(options = {}) {
   if (options.reason === 'idle') {
     screenEl.hidden = false;
     frameScreenEl.hidden = true;
-    appShell.dataset.state = 'login';
-    setLoginStatus('閒置已關閉，已停止串流');
+    showLoading('閒置已關閉', '點擊重連重新進入遊戲');
+    setSessionState('已停止');
   }
 
   state.closingSession = false;
@@ -212,10 +204,6 @@ function clearConnectWatchdog() {
 
 async function request(path, options = {}) {
   const headers = options.headers || {};
-  if (state.token) {
-    headers.Authorization = `Bearer ${state.token}`;
-  }
-
   const response = await fetch(`${getApiBase()}${path}`, { ...options, headers });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${await response.text()}`);
@@ -322,25 +310,7 @@ async function connectLiveKit(url, token) {
   attachPublishedTracks(room);
 }
 
-async function login(account, password) {
-  setLoginStatus('登入中');
-  const data = await request('/api/v1/auth/login', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ account, password }),
-  });
-
-  state.token = data.accessToken;
-  localStorage.setItem('platformToken', state.token);
-  setLoginStatus('登入成功');
-  await enterGame();
-}
-
 async function enterGame() {
-  if (!state.token) {
-    return;
-  }
-
   appShell.dataset.state = 'game';
   showLoading('正在連線', '正在進入遊戲大廳');
   setSessionState('連線中');
@@ -540,14 +510,6 @@ window.addEventListener('keydown', (event) => {
   });
 });
 
-document.getElementById('loginForm').addEventListener('submit', (event) => {
-  event.preventDefault();
-  login(
-    document.getElementById('account').value.trim(),
-    document.getElementById('password').value,
-  ).catch((error) => setLoginStatus(error.message));
-});
-
 document.getElementById('recordsBtn').addEventListener('click', () => {
   openRecordsModal().catch(() => undefined);
 });
@@ -570,8 +532,6 @@ document.getElementById('fullscreenBtn').addEventListener('click', () => {
 });
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await closeBridgeSession();
-  localStorage.removeItem('platformToken');
-  state.token = '';
   if (state.inputAckTimer) {
     clearTimeout(state.inputAckTimer);
     state.inputAckTimer = null;
@@ -579,19 +539,17 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   screenEl.srcObject = null;
   screenEl.hidden = false;
   frameScreenEl.hidden = true;
-  appShell.dataset.state = 'login';
-  setLoginStatus('已登出');
+  enterGame().catch((error) => {
+    showLoading('連線失敗', error.message);
+    setSessionState('連線失敗');
+  });
 });
 
 window.addEventListener('pagehide', () => {
   closeBridgeSession({ keepalive: true }).catch(() => undefined);
 });
 
-if (state.token) {
-  enterGame().catch((error) => {
-    localStorage.removeItem('platformToken');
-    state.token = '';
-    appShell.dataset.state = 'login';
-    setLoginStatus(error.message);
-  });
-}
+enterGame().catch((error) => {
+  showLoading('連線失敗', error.message);
+  setSessionState('連線失敗');
+});

@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UserRole } from '@prisma/client';
 import { Request } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PrismaService } from '../prisma.service';
 import { CreateSiteRecordAdjustmentDto } from './dto/create-site-record-adjustment.dto';
 import {
   BetRecordRow,
@@ -18,17 +20,20 @@ interface RequestUser {
   sub: string;
 }
 
-@UseGuards(JwtAuthGuard)
 @Controller('records')
 export class RecordsController {
-  public constructor(private readonly recordsService: RecordsService) {}
+  public constructor(
+    private readonly recordsService: RecordsService,
+    private readonly configService: ConfigService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
   @Get('bet')
   public async getBetRecords(
     @Req() req: Request,
     @Query() query: RecordQuery,
   ): Promise<RecordQueryResult<BetRecordRow>> {
-    return this.recordsService.getBetRecords(this.getUserId(req), query);
+    return this.recordsService.getBetRecords(await this.getUserId(req), query);
   }
 
   @Get('credit')
@@ -36,7 +41,7 @@ export class RecordsController {
     @Req() req: Request,
     @Query() query: RecordQuery,
   ): Promise<RecordQueryResult<CreditRecordRow>> {
-    return this.recordsService.getCreditRecords(this.getUserId(req), query);
+    return this.recordsService.getCreditRecords(await this.getUserId(req), query);
   }
 
   @Get('egame')
@@ -44,7 +49,7 @@ export class RecordsController {
     @Req() req: Request,
     @Query() query: RecordQuery,
   ): Promise<RecordQueryResult<EGameRecordRow>> {
-    return this.recordsService.getEGameRecords(this.getUserId(req), query);
+    return this.recordsService.getEGameRecords(await this.getUserId(req), query);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -55,7 +60,7 @@ export class RecordsController {
     @Body() body: CreateSiteRecordAdjustmentDto,
   ): Promise<{ id: string; versionNo: number; recordKind: string; recordId: string }> {
     return this.recordsService.createAdjustment({
-      adjustedByUserId: this.getUserId(req),
+      adjustedByUserId: await this.getUserId(req),
       recordKind: body.recordKind,
       recordId: body.recordId,
       reason: body.reason,
@@ -64,13 +69,25 @@ export class RecordsController {
     });
   }
 
-  private getUserId(req: Request): string {
+  private async getUserId(req: Request): Promise<string> {
     const requestUser = req.user as RequestUser | undefined;
 
-    if (!requestUser?.sub) {
-      throw new UnauthorizedException('UNAUTHORIZED');
+    if (requestUser?.sub) {
+      return requestUser.sub;
     }
 
-    return requestUser.sub;
+    const account = this.configService.get<string>('PUBLIC_OPERATOR_ACCOUNT') || 'public-operator';
+    const user = await this.prismaService.user.upsert({
+      where: { account },
+      update: {},
+      create: {
+        account,
+        passwordHash: 'public-bridge-login-disabled',
+        role: UserRole.OPERATOR,
+      },
+      select: { id: true },
+    });
+
+    return user.id;
   }
 }

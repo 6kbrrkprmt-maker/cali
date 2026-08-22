@@ -5,7 +5,6 @@ if (window.self !== window.top || recordParams.get('embedded') === '1') {
 }
 
 const state = {
-  token: localStorage.getItem('platformToken') || '',
   tab: 'bet',
   page: 1,
   totalPages: 1,
@@ -36,7 +35,7 @@ const schemas = {
 };
 
 function getApiBase() {
-  return document.getElementById('apiBase').value.trim().replace(/\/$/, '');
+  return `${window.location.origin}`.replace(/\/$/, '');
 }
 
 function setLoginStatus(text) {
@@ -45,10 +44,6 @@ function setLoginStatus(text) {
 
 async function request(path, options = {}) {
   const headers = options.headers || {};
-  if (state.token) {
-    headers.Authorization = `Bearer ${state.token}`;
-  }
-
   const response = await fetch(`${getApiBase()}${path}`, { ...options, headers });
   if (!response.ok) {
     const text = await response.text();
@@ -56,23 +51,6 @@ async function request(path, options = {}) {
   }
 
   return response.json();
-}
-
-async function login() {
-  const account = document.getElementById('account').value.trim();
-  const password = document.getElementById('password').value;
-
-  setLoginStatus('登入中...');
-  const data = await request('/api/v1/auth/login', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ account, password }),
-  });
-
-  state.token = data.accessToken;
-  localStorage.setItem('platformToken', state.token);
-  setLoginStatus(`${data.user.account} / ${data.user.role}`);
-  await loadRecords();
 }
 
 function renderTable(data) {
@@ -105,11 +83,6 @@ function renderTable(data) {
 }
 
 async function loadRecords() {
-  if (!state.token) {
-    setLoginStatus('請先登入');
-    return;
-  }
-
   const params = new URLSearchParams({
     page: String(state.page),
     pageSize: '10',
@@ -126,6 +99,7 @@ async function loadRecords() {
 
   const data = await request(`${schemas[state.tab].endpoint}?${params.toString()}`);
   renderTable(data);
+  setLoginStatus('已載入');
 }
 
 function renderTypeOptions() {
@@ -144,9 +118,6 @@ for (const tab of document.querySelectorAll('.tab')) {
   });
 }
 
-document.getElementById('loginBtn').addEventListener('click', () => {
-  login().catch((error) => setLoginStatus(error.message));
-});
 document.getElementById('searchBtn').addEventListener('click', () => {
   state.page = 1;
   loadRecords().catch((error) => setLoginStatus(error.message));
@@ -165,8 +136,4 @@ document.getElementById('lastPage').addEventListener('click', () => {
 });
 
 renderTypeOptions();
-
-if (state.token) {
-  setLoginStatus('已載入 token');
-  loadRecords().catch(() => setLoginStatus('token 失效，請重新登入'));
-}
+loadRecords().catch((error) => setLoginStatus(error.message));
