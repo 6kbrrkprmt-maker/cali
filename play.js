@@ -97,9 +97,34 @@ function patchCaliHallFrame(status) {
   }
 
   const frameDocument = caliHallFrame.contentDocument;
+  applyCaliHallScale(frameDocument);
   replaceTextInFrame(frameDocument, 'ID:', getStoredAccount());
   replaceTextInFrame(frameDocument, '餘額', formatMoney(status?.balance ?? state.baccarat.balance));
   replaceTextInFrame(frameDocument, '限紅', '5 - 3,000');
+}
+
+function applyCaliHallScale(frameDocument = caliHallFrame?.contentDocument) {
+  const app = frameDocument?.getElementById('app');
+  if (!app || !caliHallFrame) {
+    return;
+  }
+
+  const scale = Math.min(caliHallFrame.clientWidth / 1832, caliHallFrame.clientHeight / 1080);
+  app.style.width = '1832px';
+  app.style.height = '1080px';
+  app.style.position = 'absolute';
+  app.style.top = '0';
+  app.style.left = '0';
+  app.style.transformOrigin = '0 0';
+  app.style.transform = `scale(${scale})`;
+  frameDocument.documentElement.style.width = '100%';
+  frameDocument.documentElement.style.height = '100%';
+  frameDocument.documentElement.style.overflow = 'hidden';
+  frameDocument.body.style.width = '100%';
+  frameDocument.body.style.height = '100%';
+  frameDocument.body.style.margin = '0';
+  frameDocument.body.style.overflow = 'hidden';
+  frameDocument.body.style.background = '#000';
 }
 
 function renderHall(status) {
@@ -753,6 +778,9 @@ document.querySelectorAll('[data-open-table]').forEach((tableCard) => {
 });
 caliHallFrame?.addEventListener('load', () => {
   patchCaliHallFrame();
+});
+window.addEventListener('resize', () => {
+  applyCaliHallScale();
 });
 document.getElementById('backHallBtn').addEventListener('click', () => {
   returnToHall().catch(() => undefined);

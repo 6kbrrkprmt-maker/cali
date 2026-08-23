@@ -52,6 +52,7 @@ body {
   display: block;
   border: 0;
   background: #000;
+  pointer-events: none;
 }
 
 .hall-system-layer {
@@ -74,15 +75,15 @@ body {
   outline-offset: -2px;
 }
 
-.hall-hotspot-records { left: 63.4%; top: 1.2%; width: 2.4%; height: 4.2%; }
-.hall-hotspot-fullscreen { left: 76.7%; top: 1.2%; width: 2.4%; height: 4.2%; }
+.hall-hotspot-records { left: 61.4%; top: 0.6%; width: 4.6%; height: 5.2%; }
+.hall-hotspot-fullscreen { left: 75.1%; top: 0.6%; width: 4.4%; height: 5.2%; }
 
-.table-hotspot { height: 14.8%; }
-.table-hotspot-1 { left: 8.1%; top: 19.4%; width: 41.3%; }
-.table-hotspot-2 { left: 51.2%; top: 19.4%; width: 41.3%; }
-.table-hotspot-3 { left: 8.1%; top: 36.8%; width: 41.3%; }
-.table-hotspot-4 { left: 51.2%; top: 36.8%; width: 41.3%; }
-.table-hotspot-5 { left: 8.1%; top: 54.2%; width: 41.3%; }
+.table-hotspot { height: 15.8%; }
+.table-hotspot-1 { left: 8.0%; top: 20.0%; width: 42.1%; }
+.table-hotspot-2 { left: 51.9%; top: 20.0%; width: 42.1%; }
+.table-hotspot-3 { left: 8.0%; top: 37.5%; width: 42.1%; }
+.table-hotspot-4 { left: 51.9%; top: 37.5%; width: 42.1%; }
+.table-hotspot-5 { left: 8.0%; top: 55.0%; width: 42.1%; }
 
 .login-panel {
   min-height: 100vh;
@@ -175,8 +176,8 @@ button {
   padding: 0 12px;
   border-bottom: 1px solid rgba(230, 193, 118, 0.34);
   background: linear-gradient(180deg, #1e160a, #080806);
-  opacity: 0.04;
-  transform: translateY(-34px);
+  opacity: 1;
+  transform: translateY(0);
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
