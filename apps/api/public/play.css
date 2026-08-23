@@ -237,13 +237,13 @@ button {
   display: block;
   border: 0;
   background: #000;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .table-system-layer {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 30;
   pointer-events: auto;
 }
 
@@ -280,7 +280,7 @@ button {
   position: absolute;
   left: 50%;
   bottom: 112px;
-  z-index: 3;
+  z-index: 31;
   min-width: 190px;
   padding: 9px 16px;
   border: 1px solid rgba(255, 224, 136, 0.72);
@@ -306,7 +306,7 @@ button {
   position: absolute;
   left: 46.6%;
   bottom: 23px;
-  z-index: 3;
+  z-index: 31;
   display: grid;
   grid-template-columns: repeat(4, auto);
   gap: 8px;

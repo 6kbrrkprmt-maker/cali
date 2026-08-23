@@ -311,7 +311,7 @@ function attachCaliHallControls() {
 }
 
 function getCaliTableDesignPoint(event) {
-  const targetFrame = caliTableFrame || event.currentTarget;
+  const targetFrame = caliTableFrame || tableSystemLayer || event.currentTarget;
   if (!targetFrame) {
     return null;
   }
@@ -385,6 +385,7 @@ function setSelectedChip(amount) {
 
 function runCaliTableAction(action) {
   if (!action) {
+    showTableStatus('請點籌碼或下注區');
     return false;
   }
 

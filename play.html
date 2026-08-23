@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CaliBet</title>
-  <link rel="stylesheet" href="/play.css" />
+  <link rel="stylesheet" href="/play.css?v=table-control-20260823" />
 </head>
 <body>
   <main class="app-shell" data-state="hall">
@@ -45,7 +45,7 @@
           <button class="table-action-hotspot table-chip-hotspot table-chip-1000" data-chip="1000" type="button" aria-label="籌碼 1000"></button>
           <button class="table-action-hotspot table-chip-hotspot table-chip-3000" data-chip="3000" type="button" aria-label="籌碼 3000"></button>
           <button class="table-action-hotspot table-chip-hotspot table-chip-10000" data-chip="10000" type="button" aria-label="籌碼 10000"></button>
-          <div id="tableActionStatus" class="table-action-status" aria-live="polite"></div>
+          <div id="tableActionStatus" class="table-action-status show" aria-live="polite">本站下注已啟用</div>
           <div class="table-local-ledger" aria-label="本站下注狀態">
             <span>籌碼 <strong id="tableSelectedChip">100</strong></span>
             <span>閒 <strong id="tablePlayerBet">0</strong></span>
@@ -100,6 +100,6 @@
     </section>
   </main>
 
-  <script type="module" src="/play.js?v=table-ledger-20260823"></script>
+  <script type="module" src="/play.js?v=table-control-20260823"></script>
 </body>
 </html>
