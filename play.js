@@ -323,27 +323,27 @@ function getCaliTableAction(point) {
   }
 
   const chipAreas = [
-    { amount: 100, left: 610, right: 690 },
-    { amount: 500, left: 705, right: 785 },
-    { amount: 1000, left: 800, right: 880 },
-    { amount: 5000, left: 895, right: 975 },
-    { amount: 10000, left: 990, right: 1070 },
+    { amount: 100, left: 1370, right: 1455 },
+    { amount: 500, left: 1456, right: 1535 },
+    { amount: 1000, left: 1536, right: 1618 },
+    { amount: 3000, left: 1619, right: 1705 },
+    { amount: 10000, left: 1706, right: 1815 },
   ];
-  if (y >= 915 && y <= 1040) {
+  if (y >= 880 && y <= 1025) {
     const chip = chipAreas.find((area) => x >= area.left && x <= area.right);
     if (chip) {
       return { type: 'chip', amount: chip.amount };
     }
   }
 
-  if (y >= 720 && y <= 910) {
-    if (x >= 330 && x < 730) {
+  if (y >= 610 && y <= 800) {
+    if (x >= 680 && x < 885) {
       return { type: 'bet', side: 'player' };
     }
-    if (x >= 730 && x < 1100) {
+    if (x >= 885 && x < 1090) {
       return { type: 'bet', side: 'tie' };
     }
-    if (x >= 1100 && x <= 1500) {
+    if (x >= 1090 && x <= 1305) {
       return { type: 'bet', side: 'banker' };
     }
   }
