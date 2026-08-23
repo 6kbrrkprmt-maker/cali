@@ -42,6 +42,7 @@ const loadingTitle = document.getElementById('loadingTitle');
 const loadingText = document.getElementById('loadingText');
 const sessionState = document.getElementById('sessionState');
 const tableActionStatus = document.getElementById('tableActionStatus');
+const tableSystemLayer = document.querySelector('.table-system-layer');
 const gameTopbar = document.querySelector('.game-topbar');
 const baccaratPanel = document.getElementById('baccaratPanel');
 const baccaratBalance = document.getElementById('baccaratBalance');
@@ -291,18 +292,20 @@ function attachCaliHallControls() {
 }
 
 function getCaliTableDesignPoint(event) {
-  if (!caliTableFrame) {
+  const targetFrame = caliTableFrame || event.currentTarget;
+  if (!targetFrame) {
     return null;
   }
 
-  const scale = Math.min(caliTableFrame.clientWidth / 1832, caliTableFrame.clientHeight / 1080);
+  const rect = targetFrame.getBoundingClientRect();
+  const scale = Math.min(rect.width / 1832, rect.height / 1080);
   if (!scale) {
     return null;
   }
 
   return {
-    x: event.clientX / scale,
-    y: event.clientY / scale,
+    x: (event.clientX - rect.left) / scale,
+    y: (event.clientY - rect.top) / scale,
   };
 }
 
@@ -1088,6 +1091,13 @@ caliTableFrame?.addEventListener('load', () => {
   applyCaliTableScale();
   attachCaliTableControls();
 });
+tableSystemLayer?.addEventListener('click', (event) => {
+  const action = getCaliTableAction(getCaliTableDesignPoint(event));
+  if (runCaliTableAction(action)) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+}, true);
 window.addEventListener('resize', () => {
   applyCaliHallScale();
   applyCaliTableScale();
