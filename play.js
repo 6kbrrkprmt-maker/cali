@@ -51,6 +51,10 @@ const baccaratMessage = document.getElementById('baccaratMessage');
 const hallAccount = document.getElementById('hallAccount');
 const hallBalance = document.getElementById('hallBalance');
 const hallRange = document.getElementById('hallRange');
+const tableSelectedChip = document.getElementById('tableSelectedChip');
+const tablePlayerBet = document.getElementById('tablePlayerBet');
+const tableTieBet = document.getElementById('tableTieBet');
+const tableBankerBet = document.getElementById('tableBankerBet');
 
 function getApiBase() {
   return `${window.location.origin}`.replace(/\/$/, '');
@@ -107,6 +111,21 @@ function showTableStatus(message) {
     tableActionStatus.classList.remove('show');
     tableStatusTimer = null;
   }, 1400);
+}
+
+function renderLocalLedger() {
+  if (tableSelectedChip) {
+    tableSelectedChip.textContent = formatMoney(state.selectedChip);
+  }
+  if (tablePlayerBet) {
+    tablePlayerBet.textContent = formatMoney(state.baccarat.totals.player);
+  }
+  if (tableTieBet) {
+    tableTieBet.textContent = formatMoney(state.baccarat.totals.tie);
+  }
+  if (tableBankerBet) {
+    tableBankerBet.textContent = formatMoney(state.baccarat.totals.banker);
+  }
 }
 
 function getStoredAccount() {
@@ -360,6 +379,8 @@ function setSelectedChip(amount) {
     chip.classList.toggle('active', Number(chip.dataset.chip || 0) === state.selectedChip);
   });
   baccaratMessage.textContent = `已選 ${formatMoney(state.selectedChip)}`;
+  renderLocalLedger();
+  showTableStatus(`已選 ${formatMoney(state.selectedChip)}`);
 }
 
 function runCaliTableAction(action) {
@@ -406,7 +427,7 @@ function attachCaliTableControls() {
   }
 
   frameDocument.body.dataset.controlsAttached = '1';
-  frameDocument.addEventListener('click', (event) => {
+  const handleTableInput = (event) => {
     const action = getCaliTableAction(getCaliTableDesignPoint(event));
     if (!runCaliTableAction(action)) {
       return;
@@ -414,7 +435,10 @@ function attachCaliTableControls() {
 
     event.preventDefault();
     event.stopPropagation();
-  }, true);
+  };
+
+  frameDocument.addEventListener('pointerup', handleTableInput, true);
+  frameDocument.addEventListener('click', handleTableInput, true);
 }
 
 function renderHall(status) {
@@ -442,6 +466,7 @@ function renderBaccarat(status) {
   document.getElementById('tieTotal').textContent = formatMoney(status.totals.tie);
   renderHall(status);
   patchCaliTableFrame(status);
+  renderLocalLedger();
 }
 
 async function loadBaccaratStatus() {
@@ -1091,13 +1116,16 @@ caliTableFrame?.addEventListener('load', () => {
   applyCaliTableScale();
   attachCaliTableControls();
 });
-tableSystemLayer?.addEventListener('click', (event) => {
+function handleTableLayerInput(event) {
   const action = getCaliTableAction(getCaliTableDesignPoint(event));
   if (runCaliTableAction(action)) {
     event.preventDefault();
     event.stopPropagation();
   }
-}, true);
+}
+
+tableSystemLayer?.addEventListener('pointerup', handleTableLayerInput, true);
+tableSystemLayer?.addEventListener('click', handleTableLayerInput, true);
 window.addEventListener('resize', () => {
   applyCaliHallScale();
   applyCaliTableScale();

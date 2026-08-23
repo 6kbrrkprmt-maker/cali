@@ -279,7 +279,7 @@ button {
 .table-action-status {
   position: absolute;
   left: 50%;
-  bottom: 18px;
+  bottom: 112px;
   z-index: 3;
   min-width: 190px;
   padding: 9px 16px;
@@ -300,6 +300,30 @@ button {
 .table-action-status.show {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+.table-local-ledger {
+  position: absolute;
+  left: 46.6%;
+  bottom: 23px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid rgba(226, 195, 140, 0.54);
+  border-radius: 6px;
+  color: #e2c38c;
+  background: rgba(0, 0, 0, 0.76);
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.table-local-ledger strong {
+  color: #ffdf58;
+  font-size: 13px;
 }
 
 #screen,
