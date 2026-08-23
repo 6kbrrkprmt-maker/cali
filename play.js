@@ -127,6 +127,100 @@ function applyCaliHallScale(frameDocument = caliHallFrame?.contentDocument) {
   frameDocument.body.style.background = '#000';
 }
 
+function getCaliHallDesignPoint(event) {
+  if (!caliHallFrame) {
+    return null;
+  }
+
+  const scale = Math.min(caliHallFrame.clientWidth / 1832, caliHallFrame.clientHeight / 1080);
+  if (!scale) {
+    return null;
+  }
+
+  return {
+    x: event.clientX / scale,
+    y: event.clientY / scale,
+  };
+}
+
+function getCaliHallAction(point) {
+  if (!point) {
+    return null;
+  }
+
+  const { x, y } = point;
+  if (y <= 55 && x >= 1090 && x <= 1155) {
+    return { type: 'records' };
+  }
+  if (y <= 55 && x >= 1350 && x <= 1425) {
+    return { type: 'fullscreen' };
+  }
+  if (y >= 54 && y <= 175 && x >= 155) {
+    return { type: 'table', tableId: 'B601' };
+  }
+
+  const tableAreas = [
+    { tableId: 'B601', left: 155, top: 185, right: 970, bottom: 400 },
+    { tableId: 'D201', left: 985, top: 185, right: 1815, bottom: 400 },
+    { tableId: 'P201', left: 155, top: 410, right: 970, bottom: 615 },
+    { tableId: 'P202', left: 985, top: 410, right: 1815, bottom: 615 },
+    { tableId: 'B501', left: 155, top: 625, right: 970, bottom: 825 },
+  ];
+  const area = tableAreas.find((box) => x >= box.left && x <= box.right && y >= box.top && y <= box.bottom);
+  if (area) {
+    return { type: 'table', tableId: area.tableId };
+  }
+
+  return null;
+}
+
+function runCaliHallAction(action) {
+  if (!action) {
+    return false;
+  }
+
+  if (action.type === 'table') {
+    enterSelectedTable(action.tableId);
+    return true;
+  }
+
+  if (action.type === 'records') {
+    state.recordsFromHall = true;
+    setView('table');
+    openRecordsModal().catch(() => undefined);
+    return true;
+  }
+
+  if (action.type === 'fullscreen') {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => undefined);
+    } else {
+      document.exitFullscreen().catch(() => undefined);
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function attachCaliHallControls() {
+  const frameDocument = caliHallFrame?.contentDocument;
+  if (!frameDocument?.body || frameDocument.body.dataset.controlsAttached === '1') {
+    return;
+  }
+
+  frameDocument.body.dataset.controlsAttached = '1';
+  frameDocument.addEventListener('click', (event) => {
+    const action = getCaliHallAction(getCaliHallDesignPoint(event));
+    if (!runCaliHallAction(action)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+}
+
 function renderHall(status) {
   if (hallAccount) {
     hallAccount.textContent = getStoredAccount();
@@ -778,6 +872,7 @@ document.querySelectorAll('[data-open-table]').forEach((tableCard) => {
 });
 caliHallFrame?.addEventListener('load', () => {
   patchCaliHallFrame();
+  attachCaliHallControls();
 });
 window.addEventListener('resize', () => {
   applyCaliHallScale();
