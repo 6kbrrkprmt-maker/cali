@@ -276,6 +276,31 @@ button {
 .table-chip-5000 { left: 51%; }
 .table-chip-10000 { left: 57%; }
 
+.table-action-status {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  min-width: 190px;
+  padding: 9px 16px;
+  border: 1px solid rgba(255, 224, 136, 0.72);
+  border-radius: 999px;
+  color: #fff3ba;
+  background: rgba(0, 0, 0, 0.78);
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.58);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  transform: translate(-50%, 18px);
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+.table-action-status.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 #screen,
 #frameScreen {
   position: absolute;

@@ -25,8 +25,10 @@ const state = {
 };
 
 const IDLE_SHUTDOWN_MS = 5 * 60 * 1000;
+const LOCAL_BACCARAT_KEY = 'calibetLocalBaccaratState';
 
 let liveKitModulePromise;
+let tableStatusTimer;
 
 const appShell = document.querySelector('.app-shell');
 const hallPanel = document.getElementById('hallPanel');
@@ -39,6 +41,7 @@ const loadingLayer = document.getElementById('loadingLayer');
 const loadingTitle = document.getElementById('loadingTitle');
 const loadingText = document.getElementById('loadingText');
 const sessionState = document.getElementById('sessionState');
+const tableActionStatus = document.getElementById('tableActionStatus');
 const gameTopbar = document.querySelector('.game-topbar');
 const baccaratPanel = document.getElementById('baccaratPanel');
 const baccaratBalance = document.getElementById('baccaratBalance');
@@ -58,6 +61,51 @@ function setSessionState(text) {
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('zh-TW', { maximumFractionDigits: 2 });
+}
+
+function createLocalBaccaratState() {
+  return {
+    balance: 4191.6,
+    round: { id: `LOCAL-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}` },
+    totals: { player: 0, banker: 0, tie: 0 },
+  };
+}
+
+function readLocalBaccaratState() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(LOCAL_BACCARAT_KEY) || 'null');
+    if (stored?.round?.id && stored?.totals) {
+      return stored;
+    }
+  } catch (_error) {
+    // Fall back to a fresh local table state when storage is unavailable or corrupt.
+  }
+  return createLocalBaccaratState();
+}
+
+function writeLocalBaccaratState(localState) {
+  localStorage.setItem(LOCAL_BACCARAT_KEY, JSON.stringify(localState));
+  return localState;
+}
+
+function isApiUnavailable(error) {
+  return /HTTP 404|Failed to fetch|NetworkError/i.test(error?.message || '');
+}
+
+function showTableStatus(message) {
+  if (!tableActionStatus) {
+    return;
+  }
+
+  tableActionStatus.textContent = message;
+  tableActionStatus.classList.add('show');
+  if (tableStatusTimer) {
+    clearTimeout(tableStatusTimer);
+  }
+  tableStatusTimer = setTimeout(() => {
+    tableActionStatus.classList.remove('show');
+    tableStatusTimer = null;
+  }, 1400);
 }
 
 function getStoredAccount() {
@@ -99,6 +147,18 @@ function patchCaliHallFrame(status) {
 
   const frameDocument = caliHallFrame.contentDocument;
   applyCaliHallScale(frameDocument);
+  replaceTextInFrame(frameDocument, 'ID:', getStoredAccount());
+  replaceTextInFrame(frameDocument, '餘額', formatMoney(status?.balance ?? state.baccarat.balance));
+  replaceTextInFrame(frameDocument, '限紅', '5 - 3,000');
+}
+
+function patchCaliTableFrame(status) {
+  if (!caliTableFrame?.contentDocument?.body) {
+    return;
+  }
+
+  const frameDocument = caliTableFrame.contentDocument;
+  applyCaliTableScale(frameDocument);
   replaceTextInFrame(frameDocument, 'ID:', getStoredAccount());
   replaceTextInFrame(frameDocument, '餘額', formatMoney(status?.balance ?? state.baccarat.balance));
   replaceTextInFrame(frameDocument, '限紅', '5 - 3,000');
@@ -378,11 +438,34 @@ function renderBaccarat(status) {
   document.getElementById('bankerTotal').textContent = formatMoney(status.totals.banker);
   document.getElementById('tieTotal').textContent = formatMoney(status.totals.tie);
   renderHall(status);
+  patchCaliTableFrame(status);
 }
 
 async function loadBaccaratStatus() {
-  const status = await request('/api/v1/baccarat/status');
+  let status;
+  try {
+    status = await request('/api/v1/baccarat/status');
+  } catch (error) {
+    if (!isApiUnavailable(error)) {
+      throw error;
+    }
+    status = readLocalBaccaratState();
+  }
   renderBaccarat(status);
+}
+
+function placeLocalBaccaratBet(side, amount) {
+  const localState = readLocalBaccaratState();
+  if (!['player', 'banker', 'tie'].includes(side)) {
+    throw new Error('下注區錯誤');
+  }
+  if (localState.balance < amount) {
+    throw new Error('餘額不足');
+  }
+
+  localState.balance = Number((localState.balance - amount).toFixed(2));
+  localState.totals[side] = Number((Number(localState.totals[side] || 0) + amount).toFixed(2));
+  return writeLocalBaccaratState(localState);
 }
 
 async function loadHallStatus() {
@@ -396,26 +479,47 @@ async function loadHallStatus() {
 async function placeBaccaratBet(side) {
   baccaratMessage.textContent = '下注中';
   try {
-    const result = await request('/api/v1/baccarat/bet', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ side, amount: state.selectedChip }),
-    });
+    let result;
+    try {
+      result = await request('/api/v1/baccarat/bet', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ side, amount: state.selectedChip }),
+      });
+    } catch (error) {
+      if (!isApiUnavailable(error)) {
+        throw error;
+      }
+      result = placeLocalBaccaratBet(side, state.selectedChip);
+    }
     renderBaccarat(result);
     baccaratMessage.textContent = `已下注 ${formatMoney(state.selectedChip)}`;
+    showTableStatus(`已下注 ${formatMoney(state.selectedChip)}`);
   } catch (error) {
     baccaratMessage.textContent = error.message;
+    showTableStatus(error.message);
   }
 }
 
 async function settleBaccarat(outcome) {
   baccaratMessage.textContent = '結算中';
   try {
-    const result = await request('/api/v1/baccarat/settle', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ outcome }),
-    });
+    let result;
+    try {
+      result = await request('/api/v1/baccarat/settle', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ outcome }),
+      });
+    } catch (error) {
+      if (!isApiUnavailable(error)) {
+        throw error;
+      }
+      const localState = readLocalBaccaratState();
+      localState.totals = { player: 0, banker: 0, tie: 0 };
+      localState.round = { id: `LOCAL-${Date.now()}` };
+      result = writeLocalBaccaratState(localState);
+    }
     renderBaccarat({ balance: result.balance, round: result.round, totals: result.totals });
     baccaratMessage.textContent = `本局結果：${{ player: '閒', banker: '莊', tie: '和' }[outcome]}`;
     setTimeout(() => loadBaccaratStatus().catch(() => undefined), 650);
