@@ -30,6 +30,7 @@ let liveKitModulePromise;
 
 const appShell = document.querySelector('.app-shell');
 const hallPanel = document.getElementById('hallPanel');
+const caliHallFrame = document.getElementById('caliHallFrame');
 const screenEl = document.getElementById('screen');
 const frameScreenEl = document.getElementById('frameScreen');
 const screenFrame = document.querySelector('.screen-frame');
@@ -77,10 +78,41 @@ function setView(view) {
   appShell.dataset.state = view;
 }
 
+function replaceTextInFrame(documentRoot, label, value) {
+  const walker = documentRoot.createTreeWalker(documentRoot.body, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    if (node.nodeValue.includes(label)) {
+      node.nodeValue = node.nodeValue.replace(new RegExp(`${label}[^\\s]*`), `${label}${value}`);
+      return true;
+    }
+    node = walker.nextNode();
+  }
+  return false;
+}
+
+function patchCaliHallFrame(status) {
+  if (!caliHallFrame?.contentDocument?.body) {
+    return;
+  }
+
+  const frameDocument = caliHallFrame.contentDocument;
+  replaceTextInFrame(frameDocument, 'ID:', getStoredAccount());
+  replaceTextInFrame(frameDocument, '餘額', formatMoney(status?.balance ?? state.baccarat.balance));
+  replaceTextInFrame(frameDocument, '限紅', '5 - 3,000');
+}
+
 function renderHall(status) {
-  hallAccount.textContent = getStoredAccount();
-  hallBalance.textContent = formatMoney(status?.balance ?? state.baccarat.balance);
-  hallRange.textContent = '5 - 3,000';
+  if (hallAccount) {
+    hallAccount.textContent = getStoredAccount();
+  }
+  if (hallBalance) {
+    hallBalance.textContent = formatMoney(status?.balance ?? state.baccarat.balance);
+  }
+  if (hallRange) {
+    hallRange.textContent = '5 - 3,000';
+  }
+  patchCaliHallFrame(status);
 }
 
 function renderBaccarat(status) {
@@ -718,6 +750,9 @@ document.querySelectorAll('[data-open-table]').forEach((tableCard) => {
       open();
     }
   });
+});
+caliHallFrame?.addEventListener('load', () => {
+  patchCaliHallFrame();
 });
 document.getElementById('backHallBtn').addEventListener('click', () => {
   returnToHall().catch(() => undefined);

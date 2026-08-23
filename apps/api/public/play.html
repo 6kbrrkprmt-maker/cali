@@ -9,68 +9,16 @@
 <body>
   <main class="app-shell" data-state="hall">
     <section id="hallPanel" class="hall-panel" aria-label="遊戲廳">
-      <aside class="hall-sidebar" aria-label="遊戲分類">
-        <div class="hall-logo"><span>C</span><small>卡利系統</small></div>
-        <button class="side-game active" type="button"><span>熱</span>熱門遊戲</button>
-        <button class="side-game" type="button"><span>全</span>所有遊戲</button>
-        <button class="side-game" type="button"><span>百</span>所有百家樂</button>
-        <button class="side-game" type="button"><span>性</span>性感廳</button>
-        <button class="side-game" type="button"><span>超</span>超級多台</button>
-        <button class="side-game" type="button"><span>骰</span>骰寶</button>
-        <button class="side-game" type="button"><span>包</span>包桌</button>
-        <button class="side-game" type="button"><span>推</span>推薦子</button>
-        <button class="side-game" type="button"><span>AB</span>AB輪盤</button>
-      </aside>
-
-      <section class="hall-main">
-        <header class="hall-topbar">
-          <div class="player-pill"><span class="avatar-dot"></span>ID:<strong id="hallAccount">--</strong></div>
-          <div class="credit-pill"><span>餘額</span><strong id="hallBalance">--</strong></div>
-          <div class="range-pill"><span>限紅</span><strong id="hallRange">5 - 3,000</strong></div>
-          <button id="hallRecordsBtn" class="hall-icon-btn" type="button">紀錄</button>
-          <button id="hallFullscreenBtn" class="hall-icon-btn" type="button">全螢幕</button>
-        </header>
-
-        <nav class="recent-strip" aria-label="最近遊戲">
-          <div class="recent-title">最近遊戲</div>
-          <button class="recent-game active" type="button"><span>B601</span><small>百家樂</small></button>
-          <button class="recent-game" type="button"><span>B201</span><small>保險百家樂</small></button>
-          <button class="recent-game" type="button"><span>B18</span><small>經典百家樂</small></button>
-          <button class="recent-game" type="button"><span>B201</span><small>牛牛</small></button>
-          <button class="recent-game image" type="button"><span>海盜女王</span></button>
-          <button class="recent-game" type="button"><span>招財獅子</span><small>熱門</small></button>
-          <button class="recent-game loading" type="button"><span></span><small>牛牛</small></button>
-          <button class="recent-game" type="button"><span>C202</span><small>快速百家樂</small></button>
-        </nav>
-
-        <section class="table-grid" aria-label="百家樂桌台">
-          <article class="hall-table large" data-open-table="B601" tabindex="0">
-            <div class="table-title"><span>牛牛 BB201</span><strong class="count red">0</strong></div>
-            <div class="dealer-card dealer-irna"><span>Irma</span></div>
-            <div class="road-board road-wide" data-road="mixed"></div>
-          </article>
-          <article class="hall-table" data-open-table="D201" tabindex="0">
-            <div class="table-title"><span>龍虎 D201</span><strong class="count red">0</strong></div>
-            <div class="dealer-card dealer-aiah"><span>Aiah</span></div>
-            <div class="road-board dimmed"><em>洗牌中</em></div>
-          </article>
-          <article class="hall-table" data-open-table="P201" tabindex="0">
-            <div class="table-title"><span>經典博丁 P201</span><strong class="count green">17</strong></div>
-            <div class="dealer-card dealer-emmy"><span>Emmy</span></div>
-            <div class="road-board bead-road" data-road="bead"></div>
-          </article>
-          <article class="hall-table" data-open-table="P202" tabindex="0">
-            <div class="table-title"><span>莊閒博丁 P201</span><strong class="count green">17</strong></div>
-            <div class="dealer-card dealer-emmy"><span>Emmy</span></div>
-            <div class="road-board bead-road" data-road="bead-alt"></div>
-          </article>
-          <article class="hall-table large" data-open-table="B501" tabindex="0">
-            <div class="table-title"><span>保險百家樂 IB201</span><strong class="count red">0</strong></div>
-            <div class="dealer-card dealer-mayra"><span>Mayra</span></div>
-            <div class="road-board empty-road"></div>
-          </article>
-        </section>
-      </section>
+      <iframe id="caliHallFrame" class="cali-hall-frame" src="/cali-reference/hall.html" title="CaliBet 遊戲廳"></iframe>
+      <div class="hall-system-layer" aria-label="本站遊戲廳操作層">
+        <button class="hall-hotspot hall-hotspot-records" id="hallRecordsBtn" type="button" aria-label="投注紀錄"></button>
+        <button class="hall-hotspot hall-hotspot-fullscreen" id="hallFullscreenBtn" type="button" aria-label="全螢幕"></button>
+        <button class="hall-hotspot table-hotspot table-hotspot-1" data-open-table="B601" type="button" aria-label="進入 B601"></button>
+        <button class="hall-hotspot table-hotspot table-hotspot-2" data-open-table="D201" type="button" aria-label="進入 D201"></button>
+        <button class="hall-hotspot table-hotspot table-hotspot-3" data-open-table="P201" type="button" aria-label="進入 P201"></button>
+        <button class="hall-hotspot table-hotspot table-hotspot-4" data-open-table="P202" type="button" aria-label="進入 P202"></button>
+        <button class="hall-hotspot table-hotspot table-hotspot-5" data-open-table="B501" type="button" aria-label="進入 B501"></button>
+      </div>
     </section>
 
     <section id="gamePanel" class="game-panel" aria-label="百家樂桌內畫面">
