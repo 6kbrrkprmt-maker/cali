@@ -31,6 +31,7 @@ let liveKitModulePromise;
 const appShell = document.querySelector('.app-shell');
 const hallPanel = document.getElementById('hallPanel');
 const caliHallFrame = document.getElementById('caliHallFrame');
+const caliTableFrame = document.getElementById('caliTableFrame');
 const screenEl = document.getElementById('screen');
 const frameScreenEl = document.getElementById('frameScreen');
 const screenFrame = document.querySelector('.screen-frame');
@@ -103,13 +104,13 @@ function patchCaliHallFrame(status) {
   replaceTextInFrame(frameDocument, '限紅', '5 - 3,000');
 }
 
-function applyCaliHallScale(frameDocument = caliHallFrame?.contentDocument) {
+function applyCaliFrameScale(frameElement, frameDocument = frameElement?.contentDocument) {
   const app = frameDocument?.getElementById('app');
-  if (!app || !caliHallFrame) {
+  if (!app || !frameElement) {
     return;
   }
 
-  const scale = Math.min(caliHallFrame.clientWidth / 1832, caliHallFrame.clientHeight / 1080);
+  const scale = Math.min(frameElement.clientWidth / 1832, frameElement.clientHeight / 1080);
   app.style.width = '1832px';
   app.style.height = '1080px';
   app.style.position = 'absolute';
@@ -125,6 +126,14 @@ function applyCaliHallScale(frameDocument = caliHallFrame?.contentDocument) {
   frameDocument.body.style.margin = '0';
   frameDocument.body.style.overflow = 'hidden';
   frameDocument.body.style.background = '#000';
+}
+
+function applyCaliHallScale(frameDocument = caliHallFrame?.contentDocument) {
+  applyCaliFrameScale(caliHallFrame, frameDocument);
+}
+
+function applyCaliTableScale(frameDocument = caliTableFrame?.contentDocument) {
+  applyCaliFrameScale(caliTableFrame, frameDocument);
 }
 
 function getCaliHallDesignPoint(event) {
@@ -213,6 +222,130 @@ function attachCaliHallControls() {
   frameDocument.addEventListener('click', (event) => {
     const action = getCaliHallAction(getCaliHallDesignPoint(event));
     if (!runCaliHallAction(action)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+}
+
+function getCaliTableDesignPoint(event) {
+  if (!caliTableFrame) {
+    return null;
+  }
+
+  const scale = Math.min(caliTableFrame.clientWidth / 1832, caliTableFrame.clientHeight / 1080);
+  if (!scale) {
+    return null;
+  }
+
+  return {
+    x: event.clientX / scale,
+    y: event.clientY / scale,
+  };
+}
+
+function getCaliTableAction(point) {
+  if (!point) {
+    return null;
+  }
+
+  const { x, y } = point;
+  if (x <= 155 && y <= 170) {
+    return { type: 'back' };
+  }
+  if (y <= 55 && x >= 1090 && x <= 1155) {
+    return { type: 'records' };
+  }
+  if (y <= 55 && x >= 1350 && x <= 1425) {
+    return { type: 'fullscreen' };
+  }
+
+  const chipAreas = [
+    { amount: 100, left: 610, right: 690 },
+    { amount: 500, left: 705, right: 785 },
+    { amount: 1000, left: 800, right: 880 },
+    { amount: 5000, left: 895, right: 975 },
+    { amount: 10000, left: 990, right: 1070 },
+  ];
+  if (y >= 915 && y <= 1040) {
+    const chip = chipAreas.find((area) => x >= area.left && x <= area.right);
+    if (chip) {
+      return { type: 'chip', amount: chip.amount };
+    }
+  }
+
+  if (y >= 720 && y <= 910) {
+    if (x >= 330 && x < 730) {
+      return { type: 'bet', side: 'player' };
+    }
+    if (x >= 730 && x < 1100) {
+      return { type: 'bet', side: 'tie' };
+    }
+    if (x >= 1100 && x <= 1500) {
+      return { type: 'bet', side: 'banker' };
+    }
+  }
+
+  return null;
+}
+
+function setSelectedChip(amount) {
+  state.selectedChip = Number(amount || 100);
+  document.querySelectorAll('[data-chip]').forEach((chip) => {
+    chip.classList.toggle('active', Number(chip.dataset.chip || 0) === state.selectedChip);
+  });
+  baccaratMessage.textContent = `已選 ${formatMoney(state.selectedChip)}`;
+}
+
+function runCaliTableAction(action) {
+  if (!action) {
+    return false;
+  }
+
+  if (action.type === 'back') {
+    returnToHall().catch(() => undefined);
+    return true;
+  }
+
+  if (action.type === 'records') {
+    openRecordsModal().catch(() => undefined);
+    return true;
+  }
+
+  if (action.type === 'fullscreen') {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => undefined);
+    } else {
+      document.exitFullscreen().catch(() => undefined);
+    }
+    return true;
+  }
+
+  if (action.type === 'chip') {
+    setSelectedChip(action.amount);
+    return true;
+  }
+
+  if (action.type === 'bet') {
+    placeBaccaratBet(action.side).catch(() => undefined);
+    return true;
+  }
+
+  return false;
+}
+
+function attachCaliTableControls() {
+  const frameDocument = caliTableFrame?.contentDocument;
+  if (!frameDocument?.body || frameDocument.body.dataset.controlsAttached === '1') {
+    return;
+  }
+
+  frameDocument.body.dataset.controlsAttached = '1';
+  frameDocument.addEventListener('click', (event) => {
+    const action = getCaliTableAction(getCaliTableDesignPoint(event));
+    if (!runCaliTableAction(action)) {
       return;
     }
 
@@ -566,40 +699,15 @@ async function connectLiveKit(url, token) {
 
 async function enterGame() {
   setView('table');
-  showLoading('正在連線', '正在進入遊戲大廳');
-  setSessionState('連線中');
-  state.frameSeen = false;
-  clearConnectWatchdog();
-  state.connectWatchdogTimer = setTimeout(() => {
-    hideLoading();
-    state.connectWatchdogTimer = null;
-  }, 12000);
-
-  if (state.room) {
-    state.room.disconnect();
-    state.room = null;
-  }
-
-  const data = await request('/api/v1/bridge/sessions/start', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ provider: 'calibet', streamMode: 'livekit' }),
-  });
-
-  state.bridgeSessionId = data.bridgeSessionId;
-  scheduleIdleShutdown();
-
-  if (data.streamMode === 'frame') {
-    startFramePolling();
-    return;
-  }
-
   try {
-    const liveKit = await request(`/api/v1/bridge/sessions/${state.bridgeSessionId}/livekit-token`);
-    await connectLiveKit(liveKit.url, liveKit.token);
+    await loadBaccaratStatus();
   } catch (_error) {
-    startFramePolling();
+    renderHall();
   }
+  hideLoading();
+  setSessionState('本站桌內模式');
+  applyCaliTableScale();
+  attachCaliTableControls();
 }
 
 function enterSelectedTable(tableId) {
@@ -804,9 +912,7 @@ baccaratPanel?.addEventListener('pointerup', (event) => {
 
 document.querySelectorAll('[data-chip]').forEach((button) => {
   button.addEventListener('click', () => {
-    state.selectedChip = Number(button.dataset.chip || 100);
-    document.querySelectorAll('[data-chip]').forEach((chip) => chip.classList.toggle('active', chip === button));
-    baccaratMessage.textContent = `已選 ${formatMoney(state.selectedChip)}`;
+    setSelectedChip(button.dataset.chip);
   });
 });
 
@@ -874,8 +980,26 @@ caliHallFrame?.addEventListener('load', () => {
   patchCaliHallFrame();
   attachCaliHallControls();
 });
+caliTableFrame?.addEventListener('load', () => {
+  applyCaliTableScale();
+  attachCaliTableControls();
+});
 window.addEventListener('resize', () => {
   applyCaliHallScale();
+  applyCaliTableScale();
+});
+document.getElementById('tableBackHotspot')?.addEventListener('click', () => {
+  returnToHall().catch(() => undefined);
+});
+document.getElementById('tableRecordsHotspot')?.addEventListener('click', () => {
+  openRecordsModal().catch(() => undefined);
+});
+document.getElementById('tableFullscreenHotspot')?.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => undefined);
+    return;
+  }
+  document.exitFullscreen().catch(() => undefined);
 });
 document.getElementById('backHallBtn').addEventListener('click', () => {
   returnToHall().catch(() => undefined);

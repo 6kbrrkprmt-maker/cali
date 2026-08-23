@@ -22,7 +22,7 @@
     </section>
 
     <section id="gamePanel" class="game-panel" aria-label="百家樂桌內畫面">
-      <header class="game-topbar">
+      <header class="game-topbar" hidden>
         <div class="brand">CaliBet</div>
         <div class="session-state" id="sessionState">連線中</div>
         <button id="recordsBtn" class="top-action">投注記錄</button>
@@ -32,6 +32,20 @@
       </header>
 
       <div class="screen-frame">
+        <iframe id="caliTableFrame" class="cali-table-frame" src="/cali-reference/baccarat-table.html" title="CaliBet 百家樂桌"></iframe>
+        <div class="table-system-layer" aria-label="本站百家樂操作層">
+          <button class="table-action-hotspot table-back-hotspot" id="tableBackHotspot" type="button" aria-label="返回遊戲廳"></button>
+          <button class="table-action-hotspot table-records-hotspot" id="tableRecordsHotspot" type="button" aria-label="投注紀錄"></button>
+          <button class="table-action-hotspot table-fullscreen-hotspot" id="tableFullscreenHotspot" type="button" aria-label="全螢幕"></button>
+          <button class="table-action-hotspot table-bet-hotspot table-bet-player" data-bet-side="player" type="button" aria-label="下注閒"></button>
+          <button class="table-action-hotspot table-bet-hotspot table-bet-tie" data-bet-side="tie" type="button" aria-label="下注和"></button>
+          <button class="table-action-hotspot table-bet-hotspot table-bet-banker" data-bet-side="banker" type="button" aria-label="下注莊"></button>
+          <button class="table-action-hotspot table-chip-hotspot table-chip-100" data-chip="100" type="button" aria-label="籌碼 100"></button>
+          <button class="table-action-hotspot table-chip-hotspot table-chip-500" data-chip="500" type="button" aria-label="籌碼 500"></button>
+          <button class="table-action-hotspot table-chip-hotspot table-chip-1000" data-chip="1000" type="button" aria-label="籌碼 1000"></button>
+          <button class="table-action-hotspot table-chip-hotspot table-chip-5000" data-chip="5000" type="button" aria-label="籌碼 5000"></button>
+          <button class="table-action-hotspot table-chip-hotspot table-chip-10000" data-chip="10000" type="button" aria-label="籌碼 10000"></button>
+        </div>
         <video id="screen" autoplay muted playsinline aria-label="CaliBet"></video>
         <img id="frameScreen" alt="CaliBet" hidden />
         <div id="loadingLayer" class="loading-layer">
@@ -79,6 +93,6 @@
     </section>
   </main>
 
-  <script type="module" src="/play.js?v=hall-20260822"></script>
+  <script type="module" src="/play.js?v=table-20260823"></script>
 </body>
 </html>

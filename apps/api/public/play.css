@@ -221,13 +221,66 @@ button {
 
 .screen-frame {
   position: relative;
+  width: 100vw;
+  height: 100vh;
   min-height: 0;
   overflow: hidden;
   background: #000;
 }
 
+.cali-table-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  border: 0;
+  background: #000;
+  pointer-events: auto;
+}
+
+.table-system-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.table-action-hotspot {
+  position: absolute;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.table-action-hotspot:focus-visible {
+  outline: 2px solid rgba(255, 210, 88, 0.9);
+  outline-offset: -2px;
+}
+
+.table-back-hotspot { left: 0; top: 0; width: 8.5%; height: 10.8%; }
+.table-records-hotspot { left: 61.4%; top: 0.6%; width: 4.6%; height: 5.2%; }
+.table-fullscreen-hotspot { left: 75.1%; top: 0.6%; width: 4.4%; height: 5.2%; }
+
+.table-bet-hotspot { top: 67%; height: 18%; }
+.table-bet-player { left: 18%; width: 22%; }
+.table-bet-tie { left: 40%; width: 20%; }
+.table-bet-banker { left: 60%; width: 22%; }
+
+.table-chip-hotspot { top: 87%; width: 4.8%; height: 8.5%; }
+.table-chip-100 { left: 33%; }
+.table-chip-500 { left: 39%; }
+.table-chip-1000 { left: 45%; }
+.table-chip-5000 { left: 51%; }
+.table-chip-10000 { left: 57%; }
+
 #screen,
 #frameScreen {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   width: 100%;
   height: 100vh;
   display: block;
@@ -242,6 +295,7 @@ button {
 .loading-layer {
   position: absolute;
   inset: 0;
+  z-index: 3;
   display: grid;
   place-content: center;
   gap: 12px;
@@ -284,6 +338,11 @@ button {
   background: rgba(12, 9, 4, 0.82);
   opacity: 0.08;
   transition: opacity 0.16s ease, background 0.16s ease;
+}
+
+.app-shell[data-state="table"] .records-hotspot,
+.app-shell[data-state="table"] .baccarat-panel {
+  display: none;
 }
 
 .records-hotspot:hover,
