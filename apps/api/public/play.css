@@ -250,6 +250,36 @@ button {
     linear-gradient(180deg, #070706, #000);
 }
 
+.cali-live-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100vw;
+  height: 100vh;
+  border: 0;
+  background: #000;
+}
+
+.cali-live-frame[hidden] {
+  display: none;
+}
+
+.app-shell[data-state="table"][data-live="cali"] .site-table-stage {
+  display: none;
+}
+
+.app-shell[data-state="table"][data-live="cali"] .game-topbar {
+  z-index: 14;
+  opacity: 0.12;
+  transform: translateY(-28px);
+}
+
+.app-shell[data-state="table"][data-live="cali"] .game-topbar:hover,
+.app-shell[data-state="table"][data-live="cali"] .game-topbar:focus-within {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .site-table-stage {
   position: absolute;
   inset: 0;
@@ -305,7 +335,7 @@ button {
   position: relative;
   min-width: 0;
   display: grid;
-  grid-template-rows: 44px 78px 104px 1fr 126px;
+  grid-template-rows: 44px 1fr 126px;
   justify-items: center;
   padding: 0 18px;
 }
@@ -320,44 +350,28 @@ button {
   font-weight: 800;
 }
 
-.scoreboard {
+.cali-live-placeholder {
+  align-self: stretch;
+  width: min(1080px, calc(100vw - 330px));
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 185px;
-  align-items: center;
-  color: #fff;
-  font-size: 54px;
-  font-weight: 900;
-  text-shadow: 0 2px 0 #000, 0 0 8px currentColor;
-}
-
-.score-player { color: #35a8ff; }
-.score-banker { color: #ff6565; }
-
-.card-row {
-  display: grid;
-  grid-template-columns: repeat(4, 58px);
-  gap: 20px;
-  align-items: center;
-  margin-top: 6px;
-}
-
-.card-row span {
-  width: 58px;
-  height: 82px;
-  border: 4px solid #f8dfe0;
-  border-radius: 5px;
+  place-content: center;
+  gap: 10px;
+  border: 1px solid rgba(226, 195, 140, 0.26);
+  color: #f5d58d;
   background:
-    repeating-linear-gradient(45deg, rgba(214, 42, 70, 0.32) 0 3px, transparent 3px 6px),
-    #ff96a6;
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.48);
+    linear-gradient(rgba(0, 0, 0, 0.46), rgba(0, 0, 0, 0.7)),
+    radial-gradient(circle at 50% 30%, rgba(180, 120, 55, 0.35), transparent 42%),
+    #060504;
+  text-align: center;
 }
 
-.table-message {
-  align-self: center;
-  color: #ddd5c1;
-  font-size: 22px;
-  letter-spacing: 0;
+.cali-live-placeholder strong {
+  font-size: 24px;
+}
+
+.cali-live-placeholder span {
+  color: #d9c493;
+  font-size: 13px;
 }
 
 .roadmap-preview {
@@ -604,6 +618,11 @@ button {
   background: transparent;
   box-shadow: none;
   transform: translateX(-50%);
+}
+
+.app-shell[data-state="table"][data-live="cali"] .baccarat-panel {
+  bottom: 34px;
+  z-index: 13;
 }
 
 .baccarat-status {

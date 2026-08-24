@@ -32,6 +32,7 @@
       </header>
 
       <div class="screen-frame">
+        <iframe id="caliLiveFrame" class="cali-live-frame" title="Cali 遊戲畫面" allow="fullscreen; autoplay" hidden></iframe>
         <div class="site-table-stage" aria-hidden="true">
           <aside class="table-side-menu">
             <div class="table-logo">C<br><span>卡利系統</span></div>
@@ -41,9 +42,10 @@
             <div class="table-info-strip">
               <span>保險百家樂 IB201</span><span>ID 525079042</span><span>Mayra</span>
             </div>
-            <div class="scoreboard"><span class="score-player">閒 0</span><span class="score-banker">莊 0</span></div>
-            <div class="card-row"><span></span><span></span><span></span><span></span></div>
-            <div class="table-message">請選擇籌碼並下注</div>
+            <div class="cali-live-placeholder">
+              <strong>等待接入真正 Cali 遊戲畫面</strong>
+              <span>下方下注功能已保留；接入 live URL 或橋接串流後，這一層會換成真畫面。</span>
+            </div>
             <div class="roadmap-preview"></div>
           </section>
           <aside class="table-road-list">
@@ -109,6 +111,6 @@
     </section>
   </main>
 
-  <script type="module" src="/play.js?v=site-table-cali-20260825"></script>
+  <script type="module" src="/play.js?v=cali-live-bridge-20260825"></script>
 </body>
 </html>

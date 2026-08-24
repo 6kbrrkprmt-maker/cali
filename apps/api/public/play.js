@@ -34,6 +34,7 @@ const appShell = document.querySelector('.app-shell');
 const hallPanel = document.getElementById('hallPanel');
 const caliHallFrame = document.getElementById('caliHallFrame');
 const caliTableFrame = document.getElementById('caliTableFrame');
+const caliLiveFrame = document.getElementById('caliLiveFrame');
 const screenEl = document.getElementById('screen');
 const frameScreenEl = document.getElementById('frameScreen');
 const screenFrame = document.querySelector('.screen-frame');
@@ -95,6 +96,42 @@ function writeLocalBaccaratState(localState) {
 
 function isApiUnavailable(error) {
   return /HTTP 404|Failed to fetch|NetworkError/i.test(error?.message || '');
+}
+
+function getConfiguredCaliTableUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const rawUrl = params.get('tableUrl') || localStorage.getItem('caliTableUrl') || '';
+  if (!rawUrl) {
+    return '';
+  }
+
+  try {
+    const url = new URL(rawUrl, window.location.href);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch (_error) {
+    return '';
+  }
+}
+
+function applyCaliLiveFrame() {
+  if (!caliLiveFrame) {
+    return false;
+  }
+
+  const tableUrl = getConfiguredCaliTableUrl();
+  if (!tableUrl) {
+    caliLiveFrame.hidden = true;
+    caliLiveFrame.removeAttribute('src');
+    appShell.dataset.live = 'missing';
+    return false;
+  }
+
+  if (caliLiveFrame.getAttribute('src') !== tableUrl) {
+    caliLiveFrame.src = tableUrl;
+  }
+  caliLiveFrame.hidden = false;
+  appShell.dataset.live = 'cali';
+  return true;
 }
 
 function showTableStatus(message) {
@@ -832,13 +869,14 @@ async function connectLiveKit(url, token) {
 
 async function enterGame() {
   setView('table');
+  const hasCaliLiveFrame = applyCaliLiveFrame();
   try {
     await loadBaccaratStatus();
   } catch (_error) {
     renderHall();
   }
   hideLoading();
-  setSessionState('本站桌內模式');
+  setSessionState(hasCaliLiveFrame ? 'Cali 畫面已接入' : '等待 Cali 畫面');
   applyCaliTableScale();
   attachCaliTableControls();
 }
@@ -860,6 +898,11 @@ async function returnToHall() {
   screenEl.srcObject = null;
   screenEl.hidden = false;
   frameScreenEl.hidden = true;
+  if (caliLiveFrame) {
+    caliLiveFrame.hidden = true;
+    caliLiveFrame.removeAttribute('src');
+  }
+  appShell.dataset.live = 'missing';
   state.selectedTable = null;
   setView('hall');
   loadHallStatus().catch(() => undefined);
