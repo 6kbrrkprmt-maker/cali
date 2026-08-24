@@ -1026,8 +1026,8 @@ export class BridgeService {
       return exactMap[normalized];
     }
 
-    const hasBanker = /banker|bankerwin|banker_win|莊贏|庄赢|莊家贏|庄家赢/.test(normalized);
-    const hasPlayer = /player|playerwin|player_win|閒贏|闲赢|玩家贏|玩家赢/.test(normalized);
+    const hasBanker = /(?:^|[^a-z])banker(?:$|[^a-z])|banker[-_]?win|莊贏|庄赢|莊家贏|庄家赢/.test(normalized);
+    const hasPlayer = /(?:^|[^a-z])player(?:$|[^a-z])|player[-_]?win|閒贏|闲赢|玩家贏|玩家赢/.test(normalized);
     const hasTie = /\btie\b|draw|tiegame|和局|開和|开和/.test(normalized);
     const count = [hasBanker, hasPlayer, hasTie].filter(Boolean).length;
 
