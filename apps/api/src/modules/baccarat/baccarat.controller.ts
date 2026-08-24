@@ -20,6 +20,17 @@ export class BaccaratController {
     return this.baccaratService.settleRound(body.outcome);
   }
 
+  @Post('detected-result')
+  public async applyDetectedOutcome(@Body() body: {
+    outcome: 'player' | 'banker' | 'tie';
+    detectionKey: string;
+    source?: string;
+    confidence?: number;
+    externalRoundId?: string;
+  }): ReturnType<BaccaratService['applyDetectedOutcome']> {
+    return this.baccaratService.applyDetectedOutcome(body);
+  }
+
   @Post('reset')
   public async reset(): ReturnType<BaccaratService['reset']> {
     return this.baccaratService.reset();

@@ -215,4 +215,29 @@ export class BridgeController {
       limit,
     });
   }
+
+  @Get('sessions/:bridgeSessionId/baccarat-outcome')
+  public async detectBaccaratOutcome(
+    @Req() req: Request,
+    @Param('bridgeSessionId') bridgeSessionId: string,
+    @Query('afterId', new ParseIntPipe({ optional: true })) afterId?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ): Promise<{
+    bridgeSessionId: string;
+    scanned: number;
+    lastLogId: number;
+    detection: {
+      outcome: 'player' | 'banker' | 'tie';
+      confidence: number;
+      source: string;
+      detectionKey: string;
+      evidence: string;
+      externalRoundId?: string;
+      logId: number;
+      detectedAt: string;
+    } | null;
+  }> {
+    const userId = await this.getBridgeUserId(req);
+    return this.bridgeService.detectBaccaratOutcome(userId, bridgeSessionId, { afterId, limit });
+  }
 }

@@ -44,6 +44,19 @@ interface WorkerNetworkLogEntry {
   bodySnippet?: string;
 }
 
+type BaccaratOutcome = 'player' | 'banker' | 'tie';
+
+interface BaccaratOutcomeDetection {
+  outcome: BaccaratOutcome;
+  confidence: number;
+  source: string;
+  detectionKey: string;
+  evidence: string;
+  externalRoundId?: string;
+  logId: number;
+  detectedAt: string;
+}
+
 @Injectable()
 export class BridgeService {
   private readonly logger = new Logger(BridgeService.name);
@@ -514,6 +527,43 @@ export class BridgeService {
     };
   }
 
+  public async detectBaccaratOutcome(
+    userId: string,
+    bridgeSessionId: string,
+    options?: { afterId?: number; limit?: number },
+  ): Promise<{
+    bridgeSessionId: string;
+    scanned: number;
+    lastLogId: number;
+    detection: BaccaratOutcomeDetection | null;
+  }> {
+    const networkLogs = await this.getSessionNetworkLogs(userId, bridgeSessionId, {
+      afterId: options?.afterId,
+      limit: options?.limit || 300,
+    });
+    let best: BaccaratOutcomeDetection | null = null;
+    let lastLogId = 0;
+
+    for (const log of networkLogs.logs) {
+      lastLogId = Math.max(lastLogId, log.id);
+      const detection = this.detectBaccaratOutcomeFromLog(log);
+      if (!detection) {
+        continue;
+      }
+
+      if (!best || detection.confidence >= best.confidence) {
+        best = detection;
+      }
+    }
+
+    return {
+      bridgeSessionId,
+      scanned: networkLogs.logs.length,
+      lastLogId,
+      detection: best,
+    };
+  }
+
   public async createLiveKitViewerToken(userId: string, bridgeSessionId: string): Promise<LiveKitJoinToken> {
     await this.assertOwnedSession(userId, bridgeSessionId);
 
@@ -865,6 +915,164 @@ export class BridgeService {
     } catch (_error) {
       return null;
     }
+  }
+
+  private detectBaccaratOutcomeFromLog(log: WorkerNetworkLogEntry): BaccaratOutcomeDetection | null {
+    if (!log.bodySnippet) {
+      return null;
+    }
+
+    const parsed = this.parseJsonObject(log.bodySnippet);
+    const structuredDetection = parsed ? this.extractBaccaratOutcome(parsed) : null;
+    const textDetection = structuredDetection || this.extractBaccaratOutcomeFromText(log.bodySnippet);
+    if (!textDetection) {
+      return null;
+    }
+
+    const externalRoundId = parsed ? this.extractExternalRoundId(parsed) : undefined;
+    const fingerprint = crypto.createHash('sha1').update(log.bodySnippet.slice(0, 4000)).digest('hex').slice(0, 12);
+
+    return {
+      outcome: textDetection.outcome,
+      confidence: textDetection.confidence,
+      source: 'bridge-network',
+      detectionKey: `bridge:${log.id}:${textDetection.outcome}:${externalRoundId || fingerprint}`,
+      evidence: textDetection.evidence,
+      externalRoundId,
+      logId: log.id,
+      detectedAt: log.capturedAt,
+    };
+  }
+
+  private extractBaccaratOutcome(value: unknown, path = ''): { outcome: BaccaratOutcome; confidence: number; evidence: string } | null {
+    if (Array.isArray(value)) {
+      for (let index = 0; index < value.length; index += 1) {
+        const found = this.extractBaccaratOutcome(value[index], `${path}[${index}]`);
+        if (found) {
+          return found;
+        }
+      }
+      return null;
+    }
+
+    if (!value || typeof value !== 'object') {
+      return typeof value === 'string' ? this.extractBaccaratOutcomeFromText(value, path) : null;
+    }
+
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      const childPath = path ? `${path}.${key}` : key;
+      const keyLooksLikeResult = /winner|win(side)?|result|outcome|settle|game.?result/i.test(key);
+      if ((typeof entry === 'string' || typeof entry === 'number') && keyLooksLikeResult) {
+        const outcome = this.parseBaccaratOutcome(String(entry));
+        if (outcome) {
+          return {
+            outcome,
+            confidence: 0.92,
+            evidence: `${childPath}=${String(entry).slice(0, 80)}`,
+          };
+        }
+      }
+
+      const found = this.extractBaccaratOutcome(entry, childPath);
+      if (found) {
+        return {
+          ...found,
+          confidence: Math.max(0.35, Number((found.confidence - 0.08).toFixed(2))),
+        };
+      }
+    }
+
+    return null;
+  }
+
+  private extractBaccaratOutcomeFromText(value: string, path = 'text'): { outcome: BaccaratOutcome; confidence: number; evidence: string } | null {
+    const outcome = this.parseBaccaratOutcome(value);
+    if (!outcome) {
+      return null;
+    }
+
+    return {
+      outcome,
+      confidence: /winner|result|outcome|贏|赢|和局/i.test(value) ? 0.62 : 0.42,
+      evidence: `${path}=${value.slice(0, 120)}`,
+    };
+  }
+
+  private parseBaccaratOutcome(value: string): BaccaratOutcome | null {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+
+    const exactMap: Record<string, BaccaratOutcome> = {
+      b: 'banker',
+      banker: 'banker',
+      bank: 'banker',
+      zhuang: 'banker',
+      '莊': 'banker',
+      '庄': 'banker',
+      p: 'player',
+      player: 'player',
+      xian: 'player',
+      '閒': 'player',
+      '闲': 'player',
+      t: 'tie',
+      tie: 'tie',
+      draw: 'tie',
+      '和': 'tie',
+    };
+
+    if (exactMap[normalized]) {
+      return exactMap[normalized];
+    }
+
+    const hasBanker = /banker|bankerwin|banker_win|莊贏|庄赢|莊家贏|庄家赢/.test(normalized);
+    const hasPlayer = /player|playerwin|player_win|閒贏|闲赢|玩家贏|玩家赢/.test(normalized);
+    const hasTie = /\btie\b|draw|tiegame|和局|開和|开和/.test(normalized);
+    const count = [hasBanker, hasPlayer, hasTie].filter(Boolean).length;
+
+    if (count !== 1) {
+      return null;
+    }
+    if (hasBanker) {
+      return 'banker';
+    }
+    if (hasPlayer) {
+      return 'player';
+    }
+    return 'tie';
+  }
+
+  private extractExternalRoundId(value: unknown): string | undefined {
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        const found = this.extractExternalRoundId(entry);
+        if (found) {
+          return found;
+        }
+      }
+      return undefined;
+    }
+
+    if (!value || typeof value !== 'object') {
+      return undefined;
+    }
+
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      if (/round|shoe|game|hand|issue|bureau|boot/i.test(key) && ['string', 'number'].includes(typeof entry)) {
+        const text = String(entry).trim();
+        if (text) {
+          return text.slice(0, 80);
+        }
+      }
+
+      const found = this.extractExternalRoundId(entry);
+      if (found) {
+        return found;
+      }
+    }
+
+    return undefined;
   }
 
   private extractApiGwRows(payload: Record<string, unknown>): Array<Record<string, unknown>> {

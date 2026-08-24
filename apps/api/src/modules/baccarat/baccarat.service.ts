@@ -32,6 +32,7 @@ export class BaccaratService {
   private readonly rounds = new Map<string, BaccaratRound>();
   private readonly bets = new Map<string, BaccaratBet>();
   private readonly balances = new Map<string, number>();
+  private readonly appliedDetections = new Set<string>();
   private roundSequence = 0;
 
   public constructor(
@@ -158,9 +159,72 @@ export class BaccaratService {
     };
   }
 
+  public async applyDetectedOutcome(body: {
+    outcome: BaccaratOutcome;
+    detectionKey: string;
+    source?: string;
+    confidence?: number;
+    externalRoundId?: string;
+  }): Promise<{
+    applied: boolean;
+    balance: number;
+    round: BaccaratRound;
+    bets: BaccaratBet[];
+    totals: Record<BaccaratSide, number>;
+    detection: {
+      key: string;
+      outcome: BaccaratOutcome;
+      source: string;
+      confidence: number;
+      externalRoundId?: string;
+      appliedAt: string;
+    };
+  }> {
+    if (!['player', 'banker', 'tie'].includes(body.outcome)) {
+      throw new BadRequestException('INVALID_BACCARAT_OUTCOME');
+    }
+
+    if (!body.detectionKey || typeof body.detectionKey !== 'string') {
+      throw new BadRequestException('DETECTION_KEY_REQUIRED');
+    }
+
+    if (this.appliedDetections.has(body.detectionKey)) {
+      const status = await this.getStatus();
+      return {
+        applied: false,
+        ...status,
+        detection: {
+          key: body.detectionKey,
+          outcome: body.outcome,
+          source: body.source || 'bridge',
+          confidence: Number(body.confidence || 0),
+          externalRoundId: body.externalRoundId,
+          appliedAt: new Date().toISOString(),
+        },
+      };
+    }
+
+    const settled = await this.settleRound(body.outcome);
+    this.appliedDetections.add(body.detectionKey);
+
+    return {
+      applied: true,
+      ...settled,
+      detection: {
+        key: body.detectionKey,
+        outcome: body.outcome,
+        source: body.source || 'bridge',
+        confidence: Number(body.confidence || 0),
+        externalRoundId: body.externalRoundId,
+        appliedAt: new Date().toISOString(),
+      },
+    };
+  }
+
   public async reset(): Promise<{ balance: number; round: BaccaratRound }> {
     const userId = await this.getPublicUserId();
     this.balances.set(userId, 100000);
+    this.appliedDetections.clear();
     for (const bet of Array.from(this.bets.values())) {
       if (bet.userId === userId) {
         this.bets.delete(bet.id);

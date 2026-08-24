@@ -14,6 +14,9 @@ const state = {
   framePollTimer: null,
   framePlaybackTimer: null,
   framePlaybackQueue: [],
+  outcomePollTimer: null,
+  outcomePollErrors: 0,
+  lastOutcomeLogId: 0,
   framePollErrors: 0,
   frameFetchInProgress: false,
   idleShutdownTimer: null,
@@ -32,6 +35,7 @@ const LOCAL_BACCARAT_KEY = 'calibetLocalBaccaratState';
 
 let liveKitModulePromise;
 let tableStatusTimer;
+const appliedOutcomeDetectionKeys = new Set();
 
 const appShell = document.querySelector('.app-shell');
 const hallPanel = document.getElementById('hallPanel');
@@ -114,6 +118,12 @@ function getConfiguredCaliTableUrl() {
   } catch (_error) {
     return '';
   }
+}
+
+function getPreferredBridgeStreamMode() {
+  const params = new URLSearchParams(window.location.search);
+  const configured = (params.get('streamMode') || localStorage.getItem('caliBridgeStreamMode') || 'frame').toLowerCase();
+  return configured === 'livekit' ? 'livekit' : 'frame';
 }
 
 function applyCaliLiveFrame() {
@@ -597,6 +607,39 @@ async function settleBaccarat(outcome) {
   }
 }
 
+async function applyDetectedBaccaratOutcome(detection) {
+  if (!detection?.outcome || !detection?.detectionKey) {
+    return;
+  }
+
+  if (detection.confidence < 0.6 || appliedOutcomeDetectionKeys.has(detection.detectionKey)) {
+    return;
+  }
+
+  appliedOutcomeDetectionKeys.add(detection.detectionKey);
+  baccaratMessage.textContent = '辨識結果結算中';
+  try {
+    const result = await request('/api/v1/baccarat/detected-result', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        outcome: detection.outcome,
+        detectionKey: detection.detectionKey,
+        source: detection.source,
+        confidence: detection.confidence,
+        externalRoundId: detection.externalRoundId,
+      }),
+    });
+    renderBaccarat(result);
+    const label = { player: '閒', banker: '莊', tie: '和' }[detection.outcome] || detection.outcome;
+    baccaratMessage.textContent = result.applied ? `自動結算：${label}` : `已略過重複結果：${label}`;
+    setTimeout(() => loadBaccaratStatus().catch(() => undefined), 650);
+  } catch (error) {
+    appliedOutcomeDetectionKeys.delete(detection.detectionKey);
+    baccaratMessage.textContent = error.message;
+  }
+}
+
 function showLoading(title, text) {
   loadingTitle.textContent = title;
   loadingText.textContent = text;
@@ -646,6 +689,50 @@ function stopFramePolling() {
     state.framePollTimer = null;
   }
   clearFramePlaybackQueue();
+}
+
+function stopOutcomePolling() {
+  if (state.outcomePollTimer) {
+    clearInterval(state.outcomePollTimer);
+    state.outcomePollTimer = null;
+  }
+  state.outcomePollErrors = 0;
+  state.lastOutcomeLogId = 0;
+}
+
+async function pollDetectedBaccaratOutcome() {
+  if (!state.bridgeSessionId) {
+    return;
+  }
+
+  const query = new URLSearchParams({
+    afterId: String(state.lastOutcomeLogId),
+    limit: '300',
+  });
+
+  try {
+    const result = await request(`/api/v1/bridge/sessions/${state.bridgeSessionId}/baccarat-outcome?${query}`);
+    state.outcomePollErrors = 0;
+    if (typeof result.lastLogId === 'number') {
+      state.lastOutcomeLogId = Math.max(state.lastOutcomeLogId, result.lastLogId);
+    }
+    if (result.detection) {
+      await applyDetectedBaccaratOutcome(result.detection);
+    }
+  } catch (_error) {
+    state.outcomePollErrors += 1;
+    if (state.outcomePollErrors >= 5) {
+      stopOutcomePolling();
+    }
+  }
+}
+
+function startOutcomePolling() {
+  stopOutcomePolling();
+  pollDetectedBaccaratOutcome().catch(() => undefined);
+  state.outcomePollTimer = setInterval(() => {
+    pollDetectedBaccaratOutcome().catch(() => undefined);
+  }, 1200);
 }
 
 function clearFramePlaybackQueue() {
@@ -770,6 +857,7 @@ async function closeBridgeSession(options = {}) {
   state.closingSession = true;
   clearIdleShutdown();
   clearConnectWatchdog();
+  stopOutcomePolling();
   stopFramePolling();
   if (state.room) {
     state.room.disconnect();
@@ -929,6 +1017,28 @@ async function connectLiveKit(url, token) {
   attachPublishedTracks(room);
 }
 
+async function startBridgeSession() {
+  showLoading('建立橋接', '正在接入你開著的 Cali 遊戲畫面');
+  setSessionState('建立橋接中');
+  const startResult = await request('/api/v1/bridge/sessions/start', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ provider: 'calibet', streamMode: getPreferredBridgeStreamMode() }),
+  });
+
+  state.bridgeSessionId = startResult.bridgeSessionId;
+  scheduleIdleShutdown();
+  startOutcomePolling();
+
+  if (startResult.streamMode === 'livekit') {
+    const liveKit = await request(`/api/v1/bridge/sessions/${state.bridgeSessionId}/livekit-token`);
+    await connectLiveKit(liveKit.url, liveKit.token);
+    return;
+  }
+
+  startFramePolling();
+}
+
 async function enterGame() {
   setView('table');
   const hasCaliLiveFrame = applyCaliLiveFrame();
@@ -937,10 +1047,20 @@ async function enterGame() {
   } catch (_error) {
     renderHall();
   }
-  hideLoading();
-  setSessionState(hasCaliLiveFrame ? 'Cali 畫面已接入' : '等待 Cali 畫面');
   applyCaliTableScale();
   attachCaliTableControls();
+  if (hasCaliLiveFrame) {
+    hideLoading();
+    setSessionState('Cali 畫面已接入');
+    return;
+  }
+
+  try {
+    await startBridgeSession();
+  } catch (error) {
+    showLoading('橋接未連線', error.message);
+    setSessionState('橋接未連線');
+  }
 }
 
 function enterSelectedTable(tableId) {
