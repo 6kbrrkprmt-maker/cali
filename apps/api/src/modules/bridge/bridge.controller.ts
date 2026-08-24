@@ -220,8 +220,8 @@ export class BridgeController {
   public async detectBaccaratOutcome(
     @Req() req: Request,
     @Param('bridgeSessionId') bridgeSessionId: string,
-    @Query('afterId', new ParseIntPipe({ optional: true })) afterId?: number,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('afterId', new ParseIntPipe({ optional: true })) afterId = 0,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit = 300,
   ): Promise<{
     bridgeSessionId: string;
     scanned: number;
