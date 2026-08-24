@@ -122,7 +122,7 @@ function getConfiguredCaliTableUrl() {
 
 function getPreferredBridgeStreamMode() {
   const params = new URLSearchParams(window.location.search);
-  const configured = (params.get('streamMode') || localStorage.getItem('caliBridgeStreamMode') || 'frame').toLowerCase();
+  const configured = (params.get('streamMode') || localStorage.getItem('caliBridgeStreamMode') || 'livekit').toLowerCase();
   return configured === 'livekit' ? 'livekit' : 'frame';
 }
 
