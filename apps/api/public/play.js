@@ -14,6 +14,12 @@ const state = {
   framePollTimer: null,
   framePlaybackTimer: null,
   framePlaybackQueue: [],
+  bridgeRenewTimer: null,
+  bridgeReconnectTimer: null,
+  bridgeReconnectAttempts: 0,
+  bridgeExpiresAtMs: 0,
+  bridgeStartInProgress: false,
+  suppressAutoReconnect: false,
   outcomePollTimer: null,
   outcomePollErrors: 0,
   lastOutcomeLogId: 0,
@@ -31,6 +37,9 @@ const state = {
 
 const IDLE_SHUTDOWN_MS = 5 * 60 * 1000;
 const FRAME_PLAYBACK_DELAY_MS = 3 * 1000;
+const BRIDGE_RENEW_LEAD_MS = 2 * 60 * 1000;
+const BRIDGE_RECONNECT_DELAY_MS = 1800;
+const BRIDGE_RECONNECT_MAX_ATTEMPTS = 8;
 const LOCAL_BACCARAT_KEY = 'calibetLocalBaccaratState';
 
 let liveKitModulePromise;
@@ -124,6 +133,29 @@ function getPreferredBridgeStreamMode() {
   const params = new URLSearchParams(window.location.search);
   const configured = (params.get('streamMode') || localStorage.getItem('caliBridgeStreamMode') || 'livekit').toLowerCase();
   return configured === 'livekit' ? 'livekit' : 'frame';
+}
+
+function isBridgeSessionGone(error) {
+  const message = error?.message || '';
+  return /WORKER_SESSION_NOT_FOUND|BRIDGE_SESSION_NOT_FOUND|HTTP 502|HTTP 404/i.test(message);
+}
+
+function shouldAutoReconnectBridge() {
+  return state.view === 'table' && !getConfiguredCaliTableUrl();
+}
+
+function clearBridgeRenewTimer() {
+  if (state.bridgeRenewTimer) {
+    clearTimeout(state.bridgeRenewTimer);
+    state.bridgeRenewTimer = null;
+  }
+}
+
+function clearBridgeReconnectTimer() {
+  if (state.bridgeReconnectTimer) {
+    clearTimeout(state.bridgeReconnectTimer);
+    state.bridgeReconnectTimer = null;
+  }
 }
 
 function applyCaliLiveFrame() {
@@ -720,6 +752,11 @@ async function pollDetectedBaccaratOutcome() {
       await applyDetectedBaccaratOutcome(result.detection);
     }
   } catch (_error) {
+    if (isBridgeSessionGone(_error)) {
+      scheduleBridgeReconnect('橋接已失效，重連中');
+      return;
+    }
+
     state.outcomePollErrors += 1;
     if (state.outcomePollErrors >= 5) {
       stopOutcomePolling();
@@ -733,6 +770,49 @@ function startOutcomePolling() {
   state.outcomePollTimer = setInterval(() => {
     pollDetectedBaccaratOutcome().catch(() => undefined);
   }, 1200);
+}
+
+function scheduleBridgeRenew(expiresAtIso) {
+  clearBridgeRenewTimer();
+  const expiresAtMs = Date.parse(expiresAtIso || '');
+  if (!Number.isFinite(expiresAtMs)) {
+    state.bridgeExpiresAtMs = 0;
+    return;
+  }
+
+  state.bridgeExpiresAtMs = expiresAtMs;
+  const renewInMs = Math.max(10_000, expiresAtMs - Date.now() - BRIDGE_RENEW_LEAD_MS);
+  state.bridgeRenewTimer = setTimeout(() => {
+    restartBridgeSession('續約重連').catch(() => {
+      scheduleBridgeReconnect('續約失敗重連');
+    });
+  }, renewInMs);
+}
+
+function scheduleBridgeReconnect(reason = '橋接重連') {
+  if (!shouldAutoReconnectBridge() || state.suppressAutoReconnect || state.bridgeStartInProgress) {
+    return;
+  }
+
+  if (state.bridgeReconnectAttempts >= BRIDGE_RECONNECT_MAX_ATTEMPTS) {
+    setSessionState('重連次數已達上限');
+    showLoading('連線中斷', '請點返回遊戲廳後重試');
+    return;
+  }
+
+  if (state.bridgeReconnectTimer) {
+    return;
+  }
+
+  state.bridgeReconnectAttempts += 1;
+  const delayMs = BRIDGE_RECONNECT_DELAY_MS + (state.bridgeReconnectAttempts - 1) * 400;
+  setSessionState(`${reason}（${state.bridgeReconnectAttempts}/${BRIDGE_RECONNECT_MAX_ATTEMPTS}）`);
+  state.bridgeReconnectTimer = setTimeout(() => {
+    state.bridgeReconnectTimer = null;
+    restartBridgeSession(reason).catch(() => {
+      scheduleBridgeReconnect(reason);
+    });
+  }, delayMs);
 }
 
 function clearFramePlaybackQueue() {
@@ -807,6 +887,11 @@ async function fetchFrame() {
       setSessionState('已連線 · 建立3秒緩衝');
     }
   } catch (_error) {
+    if (isBridgeSessionGone(_error)) {
+      scheduleBridgeReconnect('畫面會話已失效，重連中');
+      return;
+    }
+
     state.framePollErrors += 1;
     if (state.framePollErrors >= 3) {
       showLoading('等待畫面', '正在重新取得 Worker 畫面');
@@ -855,6 +940,9 @@ async function closeBridgeSession(options = {}) {
   }
 
   state.closingSession = true;
+  clearBridgeRenewTimer();
+  clearBridgeReconnectTimer();
+  state.bridgeExpiresAtMs = 0;
   clearIdleShutdown();
   clearConnectWatchdog();
   stopOutcomePolling();
@@ -865,6 +953,7 @@ async function closeBridgeSession(options = {}) {
   }
 
   state.bridgeSessionId = '';
+  state.bridgeReconnectAttempts = 0;
   screenEl.srcObject = null;
   const closeRequest = fetch(`${getApiBase()}/api/v1/bridge/sessions/${bridgeSessionId}`, {
     method: 'DELETE',
@@ -988,6 +1077,9 @@ async function connectLiveKit(url, token) {
     setSessionState('串流斷線');
     state.frameSeen = false;
     showLoading('串流斷線', '請重新登入或重試');
+    if (!state.suppressAutoReconnect) {
+      scheduleBridgeReconnect('串流斷線重連');
+    }
   });
 
   room.on(RoomEvent.TrackSubscribed, (track) => {
@@ -1018,25 +1110,57 @@ async function connectLiveKit(url, token) {
 }
 
 async function startBridgeSession() {
-  showLoading('建立橋接', '正在接入你開著的 Cali 遊戲畫面');
-  setSessionState('建立橋接中');
-  const startResult = await request('/api/v1/bridge/sessions/start', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ provider: 'calibet', streamMode: getPreferredBridgeStreamMode() }),
-  });
-
-  state.bridgeSessionId = startResult.bridgeSessionId;
-  scheduleIdleShutdown();
-  startOutcomePolling();
-
-  if (startResult.streamMode === 'livekit') {
-    const liveKit = await request(`/api/v1/bridge/sessions/${state.bridgeSessionId}/livekit-token`);
-    await connectLiveKit(liveKit.url, liveKit.token);
+  if (state.bridgeStartInProgress) {
     return;
   }
 
-  startFramePolling();
+  state.bridgeStartInProgress = true;
+  try {
+    showLoading('建立橋接', '正在接入你開著的 Cali 遊戲畫面');
+    setSessionState('建立橋接中');
+    const startResult = await request('/api/v1/bridge/sessions/start', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'calibet', streamMode: getPreferredBridgeStreamMode() }),
+    });
+
+    state.bridgeSessionId = startResult.bridgeSessionId;
+    state.bridgeReconnectAttempts = 0;
+    clearBridgeReconnectTimer();
+    scheduleBridgeRenew(startResult.expiresAt);
+    scheduleIdleShutdown();
+    startOutcomePolling();
+
+    if (startResult.streamMode === 'livekit') {
+      const liveKit = await request(`/api/v1/bridge/sessions/${state.bridgeSessionId}/livekit-token`);
+      await connectLiveKit(liveKit.url, liveKit.token);
+      return;
+    }
+
+    startFramePolling();
+  } finally {
+    state.bridgeStartInProgress = false;
+  }
+}
+
+async function restartBridgeSession(reason = '橋接重連') {
+  if (!shouldAutoReconnectBridge() || state.bridgeStartInProgress) {
+    return;
+  }
+
+  setSessionState(reason);
+  showLoading(reason, '正在重新建立橋接');
+
+  if (state.bridgeSessionId) {
+    state.suppressAutoReconnect = true;
+    try {
+      await closeBridgeSession({ keepalive: true });
+    } finally {
+      state.suppressAutoReconnect = false;
+    }
+  }
+
+  await startBridgeSession();
 }
 
 async function enterGame() {
@@ -1060,6 +1184,7 @@ async function enterGame() {
   } catch (error) {
     showLoading('橋接未連線', error.message);
     setSessionState('橋接未連線');
+    scheduleBridgeReconnect('橋接未連線重連');
   }
 }
 
@@ -1072,7 +1197,9 @@ function enterSelectedTable(tableId) {
 }
 
 async function returnToHall() {
+  state.suppressAutoReconnect = true;
   await closeBridgeSession();
+  state.suppressAutoReconnect = false;
   if (state.inputAckTimer) {
     clearTimeout(state.inputAckTimer);
     state.inputAckTimer = null;
