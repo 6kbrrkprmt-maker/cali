@@ -44,10 +44,6 @@
             <div class="scoreboard"><span class="score-player">閒 0</span><span class="score-banker">莊 0</span></div>
             <div class="card-row"><span></span><span></span><span></span><span></span></div>
             <div class="table-message">請選擇籌碼並下注</div>
-            <div class="felt-bet-board">
-              <div>隨意對子<br><strong>1:5</strong></div><div>閒對牌<br><strong>1:4</strong></div><div class="main player">閒<br><strong>1:1</strong></div><div>幸運6<br><strong></strong></div><div class="main banker">莊<br><strong>1:0.95</strong></div><div>莊對牌<br><strong>1:4</strong></div><div>完美對子<br><strong>1:25</strong></div>
-              <div>開牌<br><strong>1:11</strong></div><div>閒龍寶<br><strong></strong></div><div>閒保險</div><div class="main tie">和<br><strong>1:8</strong></div><div>莊保險</div><div>莊龍寶</div><div>莊龍<br><strong>1:11</strong></div>
-            </div>
             <div class="roadmap-preview"></div>
           </section>
           <aside class="table-road-list">
@@ -70,9 +66,20 @@
             <span id="baccaratMessage">選擇籌碼後下注</span>
           </div>
           <div class="baccarat-bets">
-            <button class="bet-zone player" data-bet-side="player" type="button"><span>閒</span><strong id="playerTotal">0</strong></button>
-            <button class="bet-zone tie" data-bet-side="tie" type="button"><span>和</span><strong id="tieTotal">0</strong></button>
-            <button class="bet-zone banker" data-bet-side="banker" type="button"><span>莊</span><strong id="bankerTotal">0</strong></button>
+            <div class="side-bet">隨意對子<strong>1:5</strong></div>
+            <div class="side-bet">閒對牌<strong>1:4</strong></div>
+            <button class="bet-zone player" data-bet-side="player" type="button"><span>閒</span><em>1:1</em><strong id="playerTotal">0</strong></button>
+            <div class="side-bet">幸運6<strong>1:12</strong></div>
+            <button class="bet-zone banker" data-bet-side="banker" type="button"><span>莊</span><em>1:0.95</em><strong id="bankerTotal">0</strong></button>
+            <div class="side-bet">莊對牌<strong>1:4</strong></div>
+            <div class="side-bet">完美對子<strong>1:25</strong></div>
+            <div class="side-bet">開牌<strong>1:11</strong></div>
+            <div class="side-bet">閒龍寶<strong>1:30</strong></div>
+            <div class="side-bet">閒保險<strong></strong></div>
+            <button class="bet-zone tie" data-bet-side="tie" type="button"><span>和</span><em>1:8</em><strong id="tieTotal">0</strong></button>
+            <div class="side-bet">莊保險<strong></strong></div>
+            <div class="side-bet">莊龍寶<strong>1:30</strong></div>
+            <div class="side-bet">莊龍<strong>1:11</strong></div>
           </div>
           <div class="chip-row" id="chipRow">
             <button class="chip active" data-chip="100" type="button">100</button>
