@@ -33,7 +33,7 @@
 
       <div class="screen-frame">
         <iframe id="caliTableFrame" class="cali-table-frame" src="/cali-reference/baccarat-table.html" title="CaliBet 百家樂桌"></iframe>
-        <div class="table-system-layer" aria-label="本站百家樂操作層">
+        <div class="table-system-layer" aria-label="本站百家樂操作層" style="z-index:2147483647;pointer-events:auto;">
           <button class="table-action-hotspot table-back-hotspot" id="tableBackHotspot" type="button" aria-label="返回遊戲廳"></button>
           <button class="table-action-hotspot table-records-hotspot" id="tableRecordsHotspot" type="button" aria-label="投注紀錄"></button>
           <button class="table-action-hotspot table-fullscreen-hotspot" id="tableFullscreenHotspot" type="button" aria-label="全螢幕"></button>
@@ -45,12 +45,23 @@
           <button class="table-action-hotspot table-chip-hotspot table-chip-1000" data-chip="1000" type="button" aria-label="籌碼 1000"></button>
           <button class="table-action-hotspot table-chip-hotspot table-chip-3000" data-chip="3000" type="button" aria-label="籌碼 3000"></button>
           <button class="table-action-hotspot table-chip-hotspot table-chip-10000" data-chip="10000" type="button" aria-label="籌碼 10000"></button>
-          <div id="tableActionStatus" class="table-action-status show" aria-live="polite">本站下注已啟用</div>
+          <div id="tableActionStatus" class="table-action-status show" aria-live="polite" style="position:absolute;left:50%;bottom:142px;z-index:2147483647;min-width:220px;padding:10px 18px;border:1px solid rgba(255,224,136,.9);border-radius:999px;color:#fff3ba;background:rgba(0,0,0,.9);font-size:15px;font-weight:900;text-align:center;transform:translateX(-50%);opacity:1;pointer-events:none;">本站下注已啟用</div>
           <div class="table-local-ledger" aria-label="本站下注狀態">
             <span>籌碼 <strong id="tableSelectedChip">100</strong></span>
             <span>閒 <strong id="tablePlayerBet">0</strong></span>
             <span>和 <strong id="tableTieBet">0</strong></span>
             <span>莊 <strong id="tableBankerBet">0</strong></span>
+          </div>
+          <div class="native-table-controls" aria-label="本站下注控制" style="position:absolute;right:88px;bottom:58px;z-index:2147483647;display:grid;grid-template-columns:repeat(5,52px) 16px repeat(3,78px);gap:8px;align-items:center;padding:8px 10px;border:1px solid rgba(226,195,140,.7);border-radius:10px;background:rgba(0,0,0,.82);box-shadow:0 8px 24px rgba(0,0,0,.65);pointer-events:auto;">
+            <button data-chip="100" type="button" style="height:42px;border-radius:50%;border:2px solid #d8c073;color:#fff;background:#262626;font-weight:900;">100</button>
+            <button data-chip="500" type="button" style="height:42px;border-radius:50%;border:2px solid #44b5d6;color:#fff;background:#26353b;font-weight:900;">500</button>
+            <button data-chip="1000" type="button" style="height:42px;border-radius:50%;border:2px solid #d8c073;color:#fff;background:#262626;font-weight:900;">1K</button>
+            <button data-chip="3000" type="button" style="height:42px;border-radius:50%;border:2px solid #d8c073;color:#fff;background:#262626;font-weight:900;">3K</button>
+            <button data-chip="10000" type="button" style="height:42px;border-radius:50%;border:2px solid #f1a53d;color:#fff;background:#3a2414;font-weight:900;">MAX</button>
+            <span style="width:1px;height:40px;background:rgba(226,195,140,.45);"></span>
+            <button data-bet-side="player" type="button" style="height:42px;border-radius:8px;border:1px solid #33a7ff;color:#fff;background:#0b65aa;font-weight:900;font-size:17px;">閒</button>
+            <button data-bet-side="tie" type="button" style="height:42px;border-radius:8px;border:1px solid #35d772;color:#fff;background:#087c3c;font-weight:900;font-size:17px;">和</button>
+            <button data-bet-side="banker" type="button" style="height:42px;border-radius:8px;border:1px solid #ff6464;color:#fff;background:#9b1d25;font-weight:900;font-size:17px;">莊</button>
           </div>
         </div>
         <video id="screen" autoplay muted playsinline aria-label="CaliBet"></video>
@@ -100,6 +111,6 @@
     </section>
   </main>
 
-  <script type="module" src="/play.js?v=table-control-20260823"></script>
+  <script type="module" src="/play.js?v=native-controls-20260823"></script>
 </body>
 </html>
