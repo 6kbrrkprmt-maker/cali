@@ -46,11 +46,11 @@ This is a production-oriented Node.js + PostgreSQL skeleton for your authorized 
 
 ## Website Entry and Vercel Static Upload
 
-The main browser site is also copied to the repository root, so the first folder page contains `index.html`, `play.html`, `play.js`, and `play.css`.
+The browser site source lives in `apps/api/public`. Edit the files there only.
 
-After editing files in `apps/api/public`, run `npm run build` from the repository root to sync the root website files and regenerate `public`.
+After editing files in `apps/api/public`, run `npm run build` from the repository root to regenerate `public`.
 
-For Vercel, deploy this repository with the included `vercel.json`. Vercel runs `npm run build` and serves the generated `public/index.html`.
+For Vercel, deploy this repository with the included `vercel.json`. Vercel runs `npm run build` and serves the generated `public/index.html`. Root-level website copies are intentionally not tracked, so there is only one source of truth.
 
 Note: the static site still needs the API, worker, PostgreSQL, LiveKit, and environment variables running for login and remote control to work.
 

@@ -22,7 +22,6 @@ function copyDirectory(source, target) {
 }
 
 fs.rmSync(outputDir, { recursive: true, force: true });
-copyDirectory(sourceDir, rootDir);
 copyDirectory(sourceDir, outputDir);
-console.log(`Synced root website files from ${path.relative(rootDir, sourceDir)}`);
+console.log(`Using source website files from ${path.relative(rootDir, sourceDir)}`);
 console.log(`Prepared Vercel static output: ${path.relative(rootDir, outputDir)}`);
