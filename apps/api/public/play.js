@@ -12,6 +12,8 @@ const state = {
   connectWatchdogTimer: null,
   inputAckTimer: null,
   framePollTimer: null,
+  framePlaybackTimer: null,
+  framePlaybackQueue: [],
   framePollErrors: 0,
   frameFetchInProgress: false,
   idleShutdownTimer: null,
@@ -25,6 +27,7 @@ const state = {
 };
 
 const IDLE_SHUTDOWN_MS = 5 * 60 * 1000;
+const FRAME_PLAYBACK_DELAY_MS = 3 * 1000;
 const LOCAL_BACCARAT_KEY = 'calibetLocalBaccaratState';
 
 let liveKitModulePromise;
@@ -642,6 +645,65 @@ function stopFramePolling() {
     clearInterval(state.framePollTimer);
     state.framePollTimer = null;
   }
+  clearFramePlaybackQueue();
+}
+
+function clearFramePlaybackQueue() {
+  if (state.framePlaybackTimer) {
+    clearTimeout(state.framePlaybackTimer);
+    state.framePlaybackTimer = null;
+  }
+  state.framePlaybackQueue = [];
+}
+
+function displayBridgeFrame(frameSrc) {
+  frameScreenEl.src = frameSrc;
+  frameScreenEl.hidden = false;
+  screenEl.hidden = true;
+  state.frameSeen = true;
+  hideLoading();
+  setSessionState('已連線 · 3秒延遲');
+}
+
+function renderDelayedBridgeFrames() {
+  const readyAt = Date.now() - FRAME_PLAYBACK_DELAY_MS;
+  let frameToDisplay = null;
+
+  while (state.framePlaybackQueue.length && state.framePlaybackQueue[0].receivedAt <= readyAt) {
+    frameToDisplay = state.framePlaybackQueue.shift();
+  }
+
+  if (frameToDisplay) {
+    displayBridgeFrame(frameToDisplay.src);
+  }
+}
+
+function scheduleDelayedBridgePlayback() {
+  if (state.framePlaybackTimer || !state.framePlaybackQueue.length) {
+    return;
+  }
+
+  const nextFrame = state.framePlaybackQueue[0];
+  const delayMs = Math.max(0, nextFrame.receivedAt + FRAME_PLAYBACK_DELAY_MS - Date.now());
+  state.framePlaybackTimer = setTimeout(() => {
+    state.framePlaybackTimer = null;
+    renderDelayedBridgeFrames();
+    scheduleDelayedBridgePlayback();
+  }, delayMs);
+}
+
+function queueBridgeFrame(frame) {
+  state.framePlaybackQueue.push({
+    src: `data:${frame.mimeType || 'image/jpeg'};base64,${frame.imageBase64}`,
+    receivedAt: Date.now(),
+  });
+
+  if (state.framePlaybackQueue.length > 90) {
+    state.framePlaybackQueue.splice(0, state.framePlaybackQueue.length - 90);
+  }
+
+  renderDelayedBridgeFrames();
+  scheduleDelayedBridgePlayback();
 }
 
 async function fetchFrame() {
@@ -652,13 +714,11 @@ async function fetchFrame() {
   state.frameFetchInProgress = true;
   try {
     const frame = await request(`/api/v1/bridge/sessions/${state.bridgeSessionId}/frame`);
-    frameScreenEl.src = `data:${frame.mimeType || 'image/jpeg'};base64,${frame.imageBase64}`;
-    frameScreenEl.hidden = false;
-    screenEl.hidden = true;
-    state.frameSeen = true;
+    queueBridgeFrame(frame);
     state.framePollErrors = 0;
-    hideLoading();
-    setSessionState('已連線');
+    if (!state.frameSeen) {
+      setSessionState('已連線 · 建立3秒緩衝');
+    }
   } catch (_error) {
     state.framePollErrors += 1;
     if (state.framePollErrors >= 3) {
@@ -673,8 +733,10 @@ async function fetchFrame() {
 function startFramePolling() {
   stopFramePolling();
   screenEl.hidden = true;
-  frameScreenEl.hidden = false;
-  setSessionState('已連線 · 本機畫面模式');
+  frameScreenEl.hidden = true;
+  state.frameSeen = false;
+  showLoading('建立 3 秒緩衝', '正在接入本機 Cali 畫面');
+  setSessionState('已連線 · 建立3秒緩衝');
   fetchFrame().catch(() => undefined);
   state.framePollTimer = setInterval(() => {
     fetchFrame().catch(() => undefined);
