@@ -225,7 +225,75 @@ button {
   height: 100vh;
   min-height: 0;
   overflow: hidden;
-  background: #000;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(31, 32, 28, 0.92), rgba(2, 2, 2, 0.98) 46%),
+    linear-gradient(180deg, #070706, #000);
+}
+
+.site-table-stage {
+  position: absolute;
+  inset: 44px 0 0;
+  display: grid;
+  grid-template-rows: 88px 170px 1fr 126px;
+  justify-items: center;
+  padding: 22px 28px 230px;
+  color: #fff7e4;
+  background:
+    radial-gradient(ellipse at 50% 68%, rgba(72, 65, 45, 0.72), rgba(0, 0, 0, 0) 38%),
+    linear-gradient(90deg, rgba(25, 19, 18, 0.92) 0 112px, transparent 112px 100%);
+}
+
+.scoreboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 190px;
+  align-items: center;
+  color: #fff;
+  font-size: 58px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 #000, 0 0 8px currentColor;
+}
+
+.score-player { color: #35a8ff; }
+.score-banker { color: #ff6565; }
+
+.card-row {
+  display: grid;
+  grid-template-columns: repeat(4, 58px);
+  gap: 22px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.card-row span {
+  width: 58px;
+  height: 82px;
+  border: 4px solid #f8dfe0;
+  border-radius: 5px;
+  background:
+    repeating-linear-gradient(45deg, rgba(214, 42, 70, 0.32) 0 3px, transparent 3px 6px),
+    #ff96a6;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.48);
+}
+
+.table-message {
+  align-self: center;
+  color: #ddd5c1;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.roadmap-preview {
+  align-self: end;
+  width: min(760px, calc(100vw - 260px));
+  height: 118px;
+  border: 1px solid rgba(226, 195, 140, 0.38);
+  background:
+    radial-gradient(circle, transparent 48%, #1a94f5 51%, #1a94f5 64%, transparent 67%) 0 0 / 24px 24px,
+    linear-gradient(#d8d8d8 1px, transparent 1px),
+    linear-gradient(90deg, #d8d8d8 1px, transparent 1px),
+    #f8f8f0;
+  background-size: 24px 24px, 24px 24px, 24px 24px, auto;
 }
 
 .cali-table-frame {
@@ -390,8 +458,7 @@ button {
   transition: opacity 0.16s ease, background 0.16s ease;
 }
 
-.app-shell[data-state="table"] .records-hotspot,
-.app-shell[data-state="table"] .baccarat-panel {
+.app-shell[data-state="table"] .records-hotspot {
   display: none;
 }
 
@@ -418,15 +485,15 @@ button {
 .baccarat-panel {
   position: absolute;
   left: 50%;
-  bottom: 14px;
+  bottom: 18px;
   z-index: 12;
-  width: min(760px, calc(100vw - 24px));
+  width: min(920px, calc(100vw - 32px));
   display: grid;
   gap: 8px;
   padding: 10px;
   border: 1px solid rgba(230, 193, 118, 0.46);
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(20, 16, 9, 0.9), rgba(4, 4, 3, 0.92));
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(20, 16, 9, 0.96), rgba(4, 4, 3, 0.96));
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.54);
   transform: translateX(-50%);
 }
