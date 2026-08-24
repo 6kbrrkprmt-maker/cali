@@ -54,6 +54,23 @@ For Vercel, deploy this repository with the included `vercel.json`. Vercel runs 
 
 Note: the static site still needs the API, worker, PostgreSQL, LiveKit, and environment variables running for login and remote control to work.
 
+## One-Click Local Startup (Windows)
+
+Use the scripts in [scripts/restart-all.ps1](scripts/restart-all.ps1) and [scripts/stop-all.ps1](scripts/stop-all.ps1):
+
+1. Start everything:
+   - `powershell -ExecutionPolicy Bypass -File scripts/restart-all.ps1`
+2. Stop everything:
+   - `powershell -ExecutionPolicy Bypass -File scripts/stop-all.ps1`
+
+`restart-all.ps1` will:
+- start PostgreSQL and Redis containers,
+- prepare `.env` files if missing,
+- generate Prisma client and deploy migrations,
+- build API and worker,
+- start API (`4000`) and worker (`4300`),
+- wait until health endpoints respond.
+
 ## Bridge and Signaling Endpoints
 
 - `POST /api/v1/bridge/sessions/start`
