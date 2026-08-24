@@ -234,22 +234,79 @@ button {
   position: absolute;
   inset: 44px 0 0;
   display: grid;
-  grid-template-rows: 88px 170px 1fr 126px;
-  justify-items: center;
-  padding: 22px 28px 230px;
+  grid-template-columns: 112px 1fr 150px;
+  padding: 0 0 196px;
   color: #fff7e4;
   background:
     radial-gradient(ellipse at 50% 68%, rgba(72, 65, 45, 0.72), rgba(0, 0, 0, 0) 38%),
     linear-gradient(90deg, rgba(25, 19, 18, 0.92) 0 112px, transparent 112px 100%);
 }
 
+.table-side-menu {
+  display: grid;
+  align-content: start;
+  gap: 1px;
+  padding-top: 10px;
+  background: rgba(15, 9, 8, 0.96);
+  border-right: 1px solid rgba(226, 195, 140, 0.18);
+}
+
+.table-logo {
+  height: 112px;
+  display: grid;
+  place-items: center;
+  color: #f6d287;
+  font-size: 38px;
+  font-weight: 900;
+  line-height: 0.8;
+}
+
+.table-logo span {
+  font-size: 13px;
+}
+
+.table-side-menu span {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding-left: 22px;
+  color: #d9bf82;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.table-side-menu span:first-of-type {
+  color: #fff0b0;
+  background: linear-gradient(90deg, #803413, rgba(35, 18, 10, 0.72));
+}
+
+.table-main-view {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 36px 86px 122px 1fr 118px;
+  justify-items: center;
+  padding: 12px 18px 0;
+}
+
+.table-info-strip {
+  justify-self: end;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  color: #e9ddbd;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .scoreboard {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 190px;
+  gap: 185px;
   align-items: center;
   color: #fff;
-  font-size: 58px;
+  font-size: 54px;
   font-weight: 900;
   text-shadow: 0 2px 0 #000, 0 0 8px currentColor;
 }
@@ -260,9 +317,9 @@ button {
 .card-row {
   display: grid;
   grid-template-columns: repeat(4, 58px);
-  gap: 22px;
+  gap: 20px;
   align-items: center;
-  margin-top: 18px;
+  margin-top: 6px;
 }
 
 .card-row span {
@@ -279,13 +336,50 @@ button {
 .table-message {
   align-self: center;
   color: #ddd5c1;
-  font-size: 24px;
+  font-size: 22px;
   letter-spacing: 0;
 }
 
+.felt-bet-board {
+  align-self: end;
+  width: min(1040px, calc(100vw - 310px));
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  padding: 0 22px;
+  transform: perspective(720px) rotateX(16deg);
+}
+
+.felt-bet-board div {
+  min-height: 64px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(135, 130, 102, 0.58);
+  border-radius: 8px;
+  color: #e9efff;
+  background: linear-gradient(180deg, rgba(62, 62, 47, 0.96), rgba(35, 35, 28, 0.98));
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+  text-shadow: 0 2px 0 #000;
+}
+
+.felt-bet-board strong {
+  font-size: 15px;
+}
+
+.felt-bet-board .main {
+  min-height: 82px;
+  font-size: 34px;
+}
+
+.felt-bet-board .player { color: #5bb6ff; }
+.felt-bet-board .tie { color: #74f0ac; }
+.felt-bet-board .banker { color: #ff7777; }
+
 .roadmap-preview {
   align-self: end;
-  width: min(760px, calc(100vw - 260px));
+  width: min(760px, calc(100vw - 420px));
   height: 118px;
   border: 1px solid rgba(226, 195, 140, 0.38);
   background:
@@ -294,6 +388,37 @@ button {
     linear-gradient(90deg, #d8d8d8 1px, transparent 1px),
     #f8f8f0;
   background-size: 24px 24px, 24px 24px, 24px 24px, auto;
+}
+
+.table-road-list {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 38px 8px 0;
+  background: rgba(0, 0, 0, 0.86);
+  border-left: 1px solid rgba(226, 195, 140, 0.18);
+  overflow: hidden;
+}
+
+.table-road-list strong {
+  writing-mode: vertical-rl;
+  justify-self: start;
+  color: #e2c38c;
+  font-size: 16px;
+}
+
+.table-road-list div {
+  height: 66px;
+  color: #f5e6ba;
+  background:
+    radial-gradient(circle, transparent 46%, #ff4848 50%, #ff4848 62%, transparent 66%) 0 0 / 16px 16px,
+    linear-gradient(#ddd 1px, transparent 1px),
+    linear-gradient(90deg, #ddd 1px, transparent 1px),
+    #fafaf4;
+  background-size: 16px 16px;
+  font-size: 11px;
+  text-align: left;
 }
 
 .cali-table-frame {
